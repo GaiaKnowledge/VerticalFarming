@@ -26,6 +26,14 @@ class Scenario(object):
         self.coverage = None  # The level of coverage from insurance ( high, med or low)
         self.days = None  # The number of days you would like to run your simulation
 
+    def __str__(self):
+        """String representation"""
+
+        return """This is the represntation of a scencario with  values:
+        iLights : {}
+        iCrop : {}
+        """.format(self.iLights, self.iCrop)
+
         # self.iName = "UTC"
         # self.iLocation = "Liverpool"
         # self.iLocation_type = "Urban"  # Urban, Semi-urban or rural
@@ -66,13 +74,4 @@ class Scenario(object):
         # self.itax = 0  # Council tax
         # self.iinternet = 0  # Cost of internet per month
         # self.plantindex = 4 # Plant price index is the ratio that the price of products from a VF to the average retail price from the current
-
-
-    def __str__(self):
-        """String representation"""
-
-        return """This is the represntation of a scencario with  values:
-        iLights : {}
-        iCrop : {}
-        """.format(self.iLights, self.iCrop)
 

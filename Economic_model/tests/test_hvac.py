@@ -3,16 +3,15 @@
 Created on 25 Aug 2019
 @author: jmht
 '''
-from Economic_model.vf_hvac import calc_saturated_vapour_pressure_air
-from Economic_model.vf_hvac import calc_saturated_vapour_pressure_air_FAO
-from Economic_model.vf_hvac import calc_stomatal_resistance
-from Economic_model.vf_hvac import calc_net_radiation
-from Economic_model.vf_hvac import calc_saturated_vapour_concentration_air
-from Economic_model.vf_hvac import calc_vapour_concentration_air
-from Economic_model.vf_hvac import calc_vapour_concentration_deficit
-from Economic_model.vf_hvac import calc_vapour_concentration_surface
-from Economic_model.vf_hvac import calc_sensible_heat_exchange
-from Economic_model.vf_hvac import calc_latent_heat_flux
+from Economic_model.tests.vf_hvac import calc_saturated_vapour_pressure_air
+from Economic_model.tests.vf_hvac import calc_saturated_vapour_pressure_air_FAO
+from Economic_model.tests.vf_hvac import calc_stomatal_resistance
+from Economic_model.tests.vf_hvac import calc_net_radiation
+from Economic_model.tests.vf_hvac import calc_saturated_vapour_concentration_air
+from Economic_model.tests.vf_hvac import calc_vapour_concentration_air
+from Economic_model.tests.vf_hvac import calc_vapour_concentration_deficit
+from Economic_model.tests.vf_hvac import calc_vapour_concentration_surface
+from Economic_model.tests.vf_hvac import calc_sensible_heat_exchange
 
 
 def test_saturated_vapour_pressure_air():

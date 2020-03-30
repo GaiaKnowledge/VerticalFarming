@@ -1,0 +1,127 @@
+# INPUT SCENARIO CLASS #
+
+
+class Scenario(object):
+
+    def __init__(self):
+        self.currency = None  # The type of currency
+        self.country = None  # The country of the farm (no caps)
+        self.capex = None  # The starting amount of money or loan
+        self.repayment = None  # The loan repayment amount
+        self.interest = None  # The loan interest rate
+        self.lights = None  # The name of the lights
+        self.crop = None  # The type of crop grown
+        self.area = None  # The cultivation area of the farm
+        self.surface = None  # The surface area of the farm interior
+        self.volume = None  # The volume of the farm
+        self.building = None  # The type of building for the farm facility
+        self.system = None  # The type of vertical farming cultivation system
+        self.co2 = None  # Does the farm have CO2 enrichment?
+        self.energy = None  # What is the energy pricing for your local region?
+        self.energy_standing = None
+        self.renewable = None  # What percentage of your energy supply is produced in-house from a renewable supply?
+        self.water = None  # What is the water pricing for your local area?
+        self.water_standing = None
+        self.toutdoors = None  # Average outdoor temperature
+        self.crop_price = None  # Crop price per kilo
+        self.farm_staff = None  # The number of staff working on the farm
+        self.salaries = None  # The annual salaries of permanent employees (Management and founders)
+        self.standard_wage = None  # The £/h wages for farm hands.
+        self.insurance = None  # The cost of insurance premium
+        self.coverage = None  # The level of coverage from insurance ( high, med or low)
+        self.days = None  # The number of days you would like to run your simulation
+
+    def __str__(self):
+        """String representation"""
+
+        return """This is the representation of a scenario with  values:
+        lights : {}
+        crop : {}
+        """.format(self.lights, self.crop)
+
+# CROP CULTIVAR CLASS #
+
+
+class Crop():
+    def __init__(self,crop, time_to_harvest, kilos_tower, harvest_weight, gross_yield, kg_per_tower, light_time, seed_cost): # Time to harvest in days, harvest weight at end of cycle
+        self.name = crop
+        self.time_to_harvest = time_to_harvest # Time to harvest in days for greenhouse
+        self.kilo_tower = kilos_tower # kilos harvested per zip tower
+        self.harvest_weight = harvest_weight # typical weight per crop for harvest
+        self.gross_yield = gross_yield
+        self.kg_per_tower = kg_per_tower
+        self.light_time = light_time
+        self.seed_cost = seed_cost
+
+# GROW SYSTEM CLASS #
+
+class GrowSystem(object):
+    def __init__(self, towers_per_rack, grow_system_area, no_of_lights_req, no_of_plumbing_kit):
+        self.towers_per_rack = towers_per_rack
+        self.grow_system_area = grow_system_area
+        self.no_of_lights_req = no_of_lights_req
+        self.no_of_plumbing_kit = no_of_plumbing_kit
+
+# LIGHT SYSTEM CLASS #
+
+class LightSystem():
+    def __init__(self, light_name, light_wattage, light_efficiency):
+        self.light_name = light_name
+        self.light_wattage = light_wattage
+        self.light_efficiency = light_efficiency
+
+    def calc_no_of_lights(self, no_of_racks, no_of_lights_req):
+        return (no_of_racks * no_of_lights_req)
+
+    def calc_lights_energy(self, no_of_lights, crop_light_time):
+        lighting_kw_usage = self.light_wattage * no_of_lights / 1000
+        return lighting_kw_usage * crop_light_time
+
+# FARM CALCULATIONS CLASS #
+
+
+class Calculations(Scenario, GrowSystem):
+    def __init__(self, crop, grow_system):
+        super().__init__()
+        self.crop = crop
+        self.grow_system = grow_system
+
+    def calc_no_of_racks(self):
+        return math.floor(self.area / self.grow_system_area)  # 54 Zipracks per 250 sq-m (including aisles, work bench & plumbing kit)
+
+    def calc_plant_capacity(self, no_of_racks):
+        no_of_towers = no_of_racks * self.grow_system.towers_per_rack  # Tight spacing with lettuce (30 towers per rack)
+        yield_capacity = no_of_towers * self.crop.kg_per_tower  # 3.3kg of greens per tower
+        farm_plant_capacity = yield_capacity / self.crop.harvest_weight  # Potential yield divided by harvest weight of product
+        return (farm_plant_capacity, yield_capacity)
+
+# EQUIPMENT CLASS #
+
+class PumpCalculations(GrowSystem):  # Look at inheritance
+    def __init__(self):
+        super().__init__()
+
+    def calc_no_of_plumbing_kits(self, no_of_racks):
+        return (math.ceil(no_of_racks / self.no_of_plumbing_kit))
+
+# UTILITIES
+
+# WATER CONSUMPTION CLASS
+
+class WaterCalculations(Scenario):
+    def __init__(self):
+        super().__init__()
+
+    def water_consumption(self, no_of_racks):
+        water_consumption = no_of_racks * 0.95 * 30.42
+        water_buffer = 1900
+        water_consumption += water_buffer  # Water consumption could be used here.
+        return water_consumption
+
+    def water_cost(self, consump_per_month):
+        return (consump_per_month / 1000) * self.water + self.water_standing
+
+
+# ENERGY CONSUMPTION CLASS #
+
+# OPERATIONS COST #
