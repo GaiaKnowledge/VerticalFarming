@@ -75,6 +75,18 @@ def calc_yield(land_area, GROWING_AREA_RATIO_TO_TOTAL, no_of_tiers, crops_per_ar
                       * crops_per_area * no_of_tiers * harvest_weight
     return yield_potential
 
+# =========== OVERALL FIXED COSTS ========== #
+
+# Depreciation of building and facilities
+
+# Tax or Rent of Land/Building
+
+# Insurance
+
+# Basic Salaries
+
+# Basic Charges for Electricity and Municipal Water
+
 
 # ==========  ACTIVITIES ====== #
 
@@ -90,6 +102,8 @@ def calc_yield(land_area, GROWING_AREA_RATIO_TO_TOTAL, no_of_tiers, crops_per_ar
 '''
 
 # --------- PURCHASING CONSUMABLES ------- #
+
+# CLEANING SUPPLIES - FIXED COST
 
 # SEEDS - VARIABLE COST
 
@@ -117,8 +131,6 @@ def calc_seeds(land_area):
 
 # SUBSTRATE - VARIABLE COST
 
-# CLEANING SUPPLIES - FIXED COST
-
 # NUTRIENTS - VARIABLE COST
 
 # CO2 - VARIABLE COST
@@ -129,15 +141,16 @@ def calc_seeds(land_area):
 
 # CLEANING & SYSTEM MAINTENANCE - FIXED COST
 
-# LABOUR - VARIABLE COST
-
 # WATER & ENERGY - FIXED COST
 
 # DEPRECIATION - FIXED COST
 
+# LABOUR - VARIABLE COST
+
+
 # --------- GROWING ------- #
 
-# UTILITIES
+# UTILITIES -
 """
     Electricity typically accounts for 21% of Production costs PP.52 Plant Factory
 """
@@ -183,9 +196,9 @@ def calc_expected_yield(yield_potential):
 
 # --------- HARVESTING AND PACKAGING ------- #
 
-# LABOUR
+# LABOUR - Variable costs
 
-# CLEANING & SYSTEM MAINTENANCE
+# CLEANING & SYSTEM MAINTENANCE - Variable costs
 
 # WASTE MANAGEMENT
 
@@ -302,7 +315,7 @@ def calc_loan_repayment(capex, days):
 
 # Tax
 def calc_tax(days, profit_time_series):
-    """Returns tas as saily series"""
+    """Returns tax as daily series"""
     tax_time_series = []
     for i in range(days):
         if i % 365 == 0:
@@ -397,18 +410,31 @@ critical_threshold = critical_threshold.tolist()
 
 # Risk Assessment Graph Plot
 
-ax.plot([0., years], [safe_threshold, safe_threshold], "k--", [substantial_threshold, substantial_threshold], "k--",
-        [critical_threshold, critical_threshold], "k--",)
+#ax.plot([years_thresholds, years_thresholds], [safe_threshold, safe_threshold], "k--")
+#ax.plot([years_thresholds, years_thresholds], [substantial_threshold, substantial_threshold], "k--")
+#ax.plot([0., years], [critical_threshold, critical_threshold], "k--")
 
-
+plt.suptitle('Risk Assessment')
 plt.plot(years_series, PBS)
+plt.plot(years_series, safe_threshold, "r--", label = "safe/moderate")
+plt.plot(years_series, substantial_threshold, "r--", label = "moderate/substantial")
+plt.plot(years_series, critical_threshold, "r--", label = "substantial/critical")
+
+plt.ylim(0,1)
+plt.xlim(0,years)
+plt.grid(True)
 plt.xlabel('Time (Years)')
 plt.ylabel('Probability of Bankruptcy')
 plt.show()
 
+
+
+
+
+
 # Formulas for Produtivity KPIs
 
-def calc_eletricity_kpi(annual_yield, energy_consumption):
+def calc_eletricity_kpi(annual_yield, annual_energy_consumption):
     elec_kpi = annual_yield / annual_energy_consumption
     return elec_kpi
 
@@ -419,6 +445,11 @@ def calc_labour_kpi(annual_yield, annual_labour):
 def calc_cultivation_area_kpi(annual_yield, land_area, GROWING_AREA_RATIO_TO_TOTAL):
     cultivation_kpi = annual_yield / (land_area * GROWING_AREA_RATIO_TO_TOTAL)
     return cultivation_kpi
+
+def calc_cost_performance(opex, cogs, revenue):
+    CP = revenue/(opex+cogs)
+    return CP
+
 
 
 #Script for Productivity KPIs
