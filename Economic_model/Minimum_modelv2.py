@@ -23,6 +23,8 @@ WEEKS_IN_YEAR = 52
 DAYS_IN_WEEK = 7
 DAYS_IN_QUARTER = 112
 
+ROI_THRESHOLD = -5 # Below this Number indicates Bankruptcy
+
 GROWING_AREA_RATIO_TO_TOTAL = 0.5
 
 # =========== CREATION OF TIME SERIES
@@ -331,7 +333,19 @@ def calc_roi(profit_annual_series, capex):
     roi = (profit_annual_series/capex) * 100
     return roi
 
-#Script
+# Probability of Bankruptcy
+def calc_probability_of_bankruptcy(roi, ROI_THRESHOLD, years):
+    PBS =[0] # Probability of Bankruptcy series
+
+    for i in range(years):
+        if ROI_THRESHOLD > roi[i]:
+            probability_of_bankruptcy = 1
+            PBS.append(probability_of_bankruptcy)
+        else:
+            PBS.append(0)
+    return PBS
+
+#Script for ROI Estimation
 capex = calc_capex(land_area)
 yield_potential = calc_yield(land_area, GROWING_AREA_RATIO_TO_TOTAL, no_of_tiers, crops_per_area)
 cogs_annual = calc_cogs(yield_potential)
@@ -348,6 +362,7 @@ tax_time_series = calc_tax(days, profit_time_series)
 post_profit_time_series = calc_post_profit(profit_time_series, loan_time_series, tax_time_series)
 profit_annual_series = calc_post_profit_annual_series(post_profit_time_series, years)
 roi = calc_roi(profit_annual_series, capex)
+PBS = calc_probability_of_bankruptcy(roi, ROI_THRESHOLD, years)
 
 #Plot
 
@@ -355,3 +370,56 @@ plt.plot(years_series, roi)
 plt.xlabel('Years')
 plt.ylabel('Annual ROI')
 plt.show()
+
+
+# Setting up Risk Assessment Plot
+
+fig, ax = plt.subplots()
+ax.plot(years_series, PBS, 1, color="g")
+
+# Threshold Lines
+
+'''
+- Critical: 50% probability of bankruptcy within 3 years
+- Substantial risk: 25% probability of bankruptcy within 5 years
+- Moderate risk: 10% probability of bankruptcy within 10 years 
+- Safe: Less than 10% probability of bankruptcy within 10 years
+'''
+
+years_thresholds = np.asarray(years_series)
+safe_threshold = 0.01*years_thresholds
+substantial_threshold = 0.05*years_thresholds
+critical_threshold = 0.1666*years_thresholds
+
+safe_threshold = safe_threshold.tolist()
+substantial_threshold = substantial_threshold.tolist()
+critical_threshold = critical_threshold.tolist()
+
+# Risk Assessment Graph Plot
+
+ax.plot([0., years], [safe_threshold, safe_threshold], "k--", [substantial_threshold, substantial_threshold], "k--",
+        [critical_threshold, critical_threshold], "k--",)
+
+
+plt.plot(years_series, PBS)
+plt.xlabel('Time (Years)')
+plt.ylabel('Probability of Bankruptcy')
+plt.show()
+
+# Formulas for Produtivity KPIs
+
+def calc_eletricity_kpi(annual_yield, energy_consumption):
+    elec_kpi = annual_yield / annual_energy_consumption
+    return elec_kpi
+
+def calc_labour_kpi(annual_yield, annual_labour):
+    labour_kpi = annual_yield / annual_labour
+    return labour_kpi
+
+def calc_cultivation_area_kpi(annual_yield, land_area, GROWING_AREA_RATIO_TO_TOTAL):
+    cultivation_kpi = annual_yield / (land_area * GROWING_AREA_RATIO_TO_TOTAL)
+    return cultivation_kpi
+
+
+#Script for Productivity KPIs
+

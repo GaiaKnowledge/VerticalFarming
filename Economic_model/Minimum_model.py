@@ -8,7 +8,7 @@ DAYS_IN_YEAR = 365
 
 # Days
 
-days = 732   # Days of simulation
+days = 1825   # Days of simulation
 days_timeseries =[]  #  Creation of a timeseries for days
 for i in range(days+1):
     days_timeseries.append(i)
