@@ -10,44 +10,221 @@
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import datetime
 
 
 # ==========  GLOBAL VARIABLES ====== #
+
+#Time parameters
 YEARLY_TO_MONTHLY_31 = 11.77
 DAYS_IN_MONTH = 31
 DAYS_IN_YEAR = 365
+WEEKS_IN_YEAR = 52
+DAYS_IN_WEEK = 7
+DAYS_IN_QUARTER = 112
+
+GROWING_AREA_RATIO_TO_TOTAL = 0.5
 
 # =========== CREATION OF TIME SERIES
 
-days = 730   # Days of simulation
+days = 3660   # Days of simulation
 days_timeseries =[]  #  Creation of a timeseries for days
 for i in range(days+1):
     days_timeseries.append(i)
 
 years = math.floor(days / 365)  #  Years of Simulation
-years_series = []  # Creation of timeseries for years
+years_series = []  # Creation of time series for years
 for i in range(years + 1):
     years_series.append(i)
 
-# User Inputs
+# ====== USER INPUTS ======== #
 
 yield_required = 9000 #Annual yield (kg)
+harvest_weight = 0.1 # 100g of lettuce
+land_area = 200
+crop_price = 10 # £ per kg
+crops_per_area = 20 # per sq-m of growbed
+no_of_tiers = 15
 
 # Capital Expenditure
 
-def calc_capex(yield_required):
-    capex = 20*yield_required
+def calc_capex(land_area):
+    '''
+    PP. 51 of Plant Factory
+    Initial cost including necessary facilities (15 tiers, 50cm distance between tiers)
+    $4000 USD per sq-m x 0.8 for £
+    '''
+    capex = 4000*0.8*land_area
     return capex
+
+# Annual Productivity
+def calc_yield(land_area, GROWING_AREA_RATIO_TO_TOTAL, no_of_tiers, crops_per_area):
+    '''
+    PP. 51 of Plant Factory
+    3000 lettuce heads per sq-m per year (80-100g fresh weight)
+    20 plants per sq-m (culture bed) x 15 tiers x 0.9 ratio salable
+    x 0.5 effective floor ratio of tiers to total floor area
+    50% of floor area used for operations, walkway, seedlings, production
+    equipment.
+    12-15 days to harvest
+    20-22 days seed to seedling
+    '''
+    yield_potential = land_area * GROWING_AREA_RATIO_TO_TOTAL\
+                      * crops_per_area * no_of_tiers * harvest_weight
+    return yield_potential
+
 
 # ==========  ACTIVITIES ====== #
 
-# ==========
+'''
+    Cost Components from PP.52 Plant Factory
+    Labour : 25-30%
+    Electricity: 25-30%
+    Depreciation: 25-35%
+    Logistics: 9.8%
+    Consumables: 7.6%
+    Seeds: 2.1%
+    Other: 11%
+'''
+
+# --------- PURCHASING CONSUMABLES ------- #
+
+# SEEDS - VARIABLE COST
+
+def calc_seeds(land_area):
+    '''
+    Seeds typically account for 2.1% production costs
+    PP. 51 of Plant Factory
+    3000 lettuce heads per sq-m per year (80-100g fresh weight)
+    20 plants per sq-m (culture bed) x 15 tiers x 0.9 ratio salable
+    x 0.5 effective floor ratio of tiers to total floor area
+    50% of floor area used for operations, walkway, seedlings, production
+    equipment.
+    12-15 days to harvest
+    20-22 days seed to seedling
+    '''
+    qty_of_seeds = yield_potential/harvest_weight # annual qty of seeds required
+    seeds_cost = qty_of_seeds * 0.01
+    return seeds_cost
+
+# PACKAGING - VARIABLE COST
+
+"""
+    Consumables typically account for 7.5% production costs
+"""
+
+# SUBSTRATE - VARIABLE COST
+
+# CLEANING SUPPLIES - FIXED COST
+
+# NUTRIENTS - VARIABLE COST
+
+# CO2 - VARIABLE COST
+
+# PEST MANAGEMENT - VARIABLE COST
+
+# --------- SOWING AND PROPAGATION ------- #
+
+# CLEANING & SYSTEM MAINTENANCE - FIXED COST
+
+# LABOUR - VARIABLE COST
+
+# WATER & ENERGY - FIXED COST
+
+# DEPRECIATION - FIXED COST
+
+# --------- GROWING ------- #
+
+# UTILITIES
+"""
+    Electricity typically accounts for 21% of Production costs PP.52 Plant Factory
+"""
 
 
-# Cost of Goods Sold
 
-def calc_cogs(yield_required): # seeds_cost + nutrients_cost + co2_cost + (labour_cost * 50) + packaging_cost + media_cost
-    cogs_annual = yield_required*10
+def calc_utilities(yield_potential):  # Energy and Water
+    water_consumption = yield_potential*1
+    energy_consumption = yield_potential*1
+    utilities_annual = water_consumption*energy_consumption
+    return utilities_annual
+
+# LABOUR
+
+def calc_labour(yield_potential):
+    """
+            Labour Costs Formaula
+            Notes
+            ------
+                Direct farm labour cost = Number of staff working full-time x wages x 30 hours
+                Generalisation if statement on farm labour required if unknown
+    """
+
+    farm_hours = yield_potential*0.2
+    labour_cost = farm_hours * 7 # wage
+    return labour_cost
+
+# DEPRECIATION
+'''
+    The economic life period for calculating the depreciation differs from country to country. 
+    In Japan, it is 15 years for the PFAL building, 10 years for the facilities, and 5 years 
+    for the LED lamps.
+    
+    Typically accounts for 21% of Production costs
+'''
+
+# EXPECTED YIELDS
+
+def calc_expected_yield(yield_potential):
+    yield_rate = 0.97 # Ratio of marketable plants produced by divided by no. of seeds transplanted
+    expected_yield = yield_potential * yield_rate
+    return expected_yield
+
+# --------- HARVESTING AND PACKAGING ------- #
+
+# LABOUR
+
+# CLEANING & SYSTEM MAINTENANCE
+
+# WASTE MANAGEMENT
+
+# --------- PACKING AND DELIVERY ------- #
+
+# DELIVERY LABOUR / OUTSOURCING FEES
+
+"""
+Packing and Delivery Typically 6-8% of production cost when near City 
+12% when outside city PP.52 of Plant Factory
+"""
+
+"""
+Logistics typically accounts for 9.8% PP.52 of Plant Factory
+"""
+
+# VEHICLE MAINTENANCE AND INSURANCE
+
+# COMPLIANCE
+
+# --------- SALES & MARKETING ------- #
+
+# MARKETING COSTS
+
+# OFFICE EXPENSES
+
+# ==================== FINANCES ================ #
+
+# OpEx Time series
+
+'''The component costs for electricity, labor,
+   depreciation, and others of the PFAL using fluorescent (FL) lamps
+    in Japan accounted for, on average, 25% e 30%, 25% e 30%, 25% e 35%, 
+    and 20%, respectively. 
+    '''
+
+def calc_cogs(yield_potential):
+    '''
+    seeds_cost + nutrients_cost + co2_cost + (labour_cost * 50) + packaging costs + media costs
+    '''
+    cogs_annual = yield_potential*2
     return cogs_annual
 
 def calc_cogs_time_series(days, cogs_annual):
@@ -65,28 +242,7 @@ def calc_cogs_time_series(days, cogs_annual):
             cogs_time_series.append(0)
     return cogs_time_series
 
-# Operational expenditure
 
-# Utilities
-def calc_utilities(yield_required):  # Energy and Water
-    utilities_annual = yield_required*3
-    return utilities_annual
-
-# Labour
-def calc_labour(yield_required):
-    """
-            Labour Costs Formaula
-            Notes
-            ------
-                Direct farm labour cost = Number of staff working full-time x wages x 30 hours
-                Generalisation if statement on farm labour required if unknown
-    """
-
-    farm_hours = yield_required*1.2
-    labour_cost = farm_hours * 7 # wage
-    return labour_cost
-
-# OpEx Time series
 def calc_opex_time_series(days, labour_cost, utilities):
     """
     Can adjust for days/weekly/monthly/annually in the future - ASSUMED: CONSUMABLES PURCHASED QUARTERLY
@@ -105,16 +261,10 @@ def calc_opex_time_series(days, labour_cost, utilities):
     return opex_time_series
 
 
-# Expected Yield
-
-def calc_expected_yield(yield_required):
-    expected_yield = yield_required
-    return expected_yield
-
-# Sales
+# Sales (ANNUALLY)
 
 def calc_sales(expected_yield):  # per year
-    sales = expected_yield*10 # £10 per kilo
+    sales = expected_yield*15 # £15 per kilo
     return sales
 
 
@@ -122,9 +272,10 @@ def calc_revenue_time_series(days, sales):
     revenue_time_series = []
     for i in range(days):
         revenue = 0
-        if i % 4 == 0:
-            revenue += (sales/365)*4  # sales across 365 days of the year
-        revenue_time_series.append(0)
+        if i % DAYS_IN_WEEK == 0:
+            revenue += (sales/WEEKS_IN_YEAR)  # sales across 365 days of the year
+        revenue_time_series.append(revenue)
+
     return revenue_time_series
 
 # Profit
@@ -165,39 +316,38 @@ def calc_post_profit(profit_time_series, loan_repayments, tax):
     post_profit_time_series = profit_time_series - loan_repayments - tax
     return post_profit_time_series
 
-# Return on Investment - Annually
-def calc_roi(post_profit_time_series, capex):
+def calc_post_profit_annual_series(post_profit_time_series, years):
     post_profit = np.cumsum(post_profit_time_series)
     profit_series = [0]
 
-    # for i in range(days):
-    #     if i % 365 == 0:
-    #        profit_series.append(post_profit[days] - post_profit[days-365])  # year 2
+    for i in range(years):
+        profit_series.append(post_profit[years * DAYS_IN_YEAR] - post_profit[(years * DAYS_IN_YEAR) - DAYS_IN_YEAR])
 
-    profit_series.append(post_profit[365]) # years 1
-    profit_series.append(post_profit[730]-post_profit[365]) # year 2
-    # profit_series.append(post_profit[1095] - post_profit[730])  # year 3
-    # profit_series.append(post_profit[1460] - post_profit[1095])  # year 4
-    # profit_series.append(post_profit[1825] - post_profit[1460])  # year 5
-    profit = np.asarray(profit_series)
-    roi = (profit/capex) * 100
+    profit_annual_series = np.asarray(profit_series)
+    return profit_annual_series
+
+# Return on Investment - Annually
+def calc_roi(profit_annual_series, capex):
+    roi = (profit_annual_series/capex) * 100
     return roi
 
 #Script
-capex = calc_capex(yield_required)
-cogs_annual = calc_cogs(yield_required)
+capex = calc_capex(land_area)
+yield_potential = calc_yield(land_area, GROWING_AREA_RATIO_TO_TOTAL, no_of_tiers, crops_per_area)
+cogs_annual = calc_cogs(yield_potential)
 cogs_time_series = calc_cogs_time_series(days, cogs_annual)
-utilities = calc_utilities(yield_required)
-labour = calc_labour(yield_required)
+utilities = calc_utilities(yield_potential)
+labour = calc_labour(yield_potential)
 opex_time_series = calc_opex_time_series(days, labour, utilities)
-expected_yield = calc_expected_yield(yield_required)
+expected_yield = calc_expected_yield(yield_potential)
 sales = calc_sales(expected_yield)
 revenue_time_series = calc_revenue_time_series(days, sales)
 profit_time_series = calc_profit_time_series(opex_time_series, cogs_time_series, revenue_time_series)
 loan_time_series = calc_loan_repayment(capex, days)
 tax_time_series = calc_tax(days, profit_time_series)
 post_profit_time_series = calc_post_profit(profit_time_series, loan_time_series, tax_time_series)
-roi = calc_roi(post_profit_time_series, capex)
+profit_annual_series = calc_post_profit_annual_series(post_profit_time_series, years)
+roi = calc_roi(profit_annual_series, capex)
 
 #Plot
 
