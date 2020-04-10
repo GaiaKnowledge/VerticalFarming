@@ -29,15 +29,9 @@ GROWING_AREA_RATIO_TO_TOTAL = 0.5
 
 # =========== CREATION OF TIME SERIES
 
-days = 3660   # Days of simulation
-days_timeseries =[]  #  Creation of a timeseries for days
-for i in range(days+1):
-    days_timeseries.append(i)
-
-years = math.floor(days / 365)  #  Years of Simulation
-years_series = []  # Creation of time series for years
-for i in range(years + 1):
-    years_series.append(i)
+num_days = 3660   # Days of simulation
+days_timeseries = [i for i in range(num_days + 1)]  #  Creation of a timeseries for days
+num_years = math.floor(num_days / 365)  #  Years of Simulation
 
 # ====== USER INPUTS ======== #
 
@@ -160,7 +154,7 @@ def calc_seeds(land_area):
 def calc_utilities(yield_potential):  # Energy and Water
     water_consumption = yield_potential*1
     energy_consumption = yield_potential*1
-    utilities_annual = water_consumption*energy_consumption
+    utilities_annual = water_consumption * energy_consumption
     return utilities_annual
 
 # LABOUR
@@ -359,98 +353,235 @@ def calc_probability_of_bankruptcy(roi, ROI_THRESHOLD, years):
     return PBS
 
 #Script for ROI Estimation
+# Calculate initial state
 capex = calc_capex(land_area)
 yield_potential = calc_yield(land_area, GROWING_AREA_RATIO_TO_TOTAL, no_of_tiers, crops_per_area)
+# calculate total variable quantities based on initial state
 cogs_annual = calc_cogs(yield_potential)
-cogs_time_series = calc_cogs_time_series(days, cogs_annual)
 utilities = calc_utilities(yield_potential)
 labour = calc_labour(yield_potential)
-opex_time_series = calc_opex_time_series(days, labour, utilities)
 expected_yield = calc_expected_yield(yield_potential)
 sales = calc_sales(expected_yield)
-revenue_time_series = calc_revenue_time_series(days, sales)
+# calculate derived quantities time series based on calculated quantities
+cogs_time_series = calc_cogs_time_series(num_days, cogs_annual)
+opex_time_series = calc_opex_time_series(num_days, labour, utilities)
+revenue_time_series = calc_revenue_time_series(num_days, sales)
+loan_time_series = calc_loan_repayment(capex, num_days)
+# calculate derived metrics from base quantities
 profit_time_series = calc_profit_time_series(opex_time_series, cogs_time_series, revenue_time_series)
-loan_time_series = calc_loan_repayment(capex, days)
-tax_time_series = calc_tax(days, profit_time_series)
+tax_time_series = calc_tax(num_days, profit_time_series)
 post_profit_time_series = calc_post_profit(profit_time_series, loan_time_series, tax_time_series)
-profit_annual_series = calc_post_profit_annual_series(post_profit_time_series, years)
+profit_annual_series = calc_post_profit_annual_series(post_profit_time_series, num_years)
+# final metrics
 roi = calc_roi(profit_annual_series, capex)
-PBS = calc_probability_of_bankruptcy(roi, ROI_THRESHOLD, years)
-
-#Plot
-
-plt.plot(years_series, roi)
-plt.xlabel('Years')
-plt.ylabel('Annual ROI')
-plt.show()
-
-
-# Setting up Risk Assessment Plot
-
-fig, ax = plt.subplots()
-ax.plot(years_series, PBS, 1, color="g")
-
-# Threshold Lines
-
-'''
-- Critical: 50% probability of bankruptcy within 3 years
-- Substantial risk: 25% probability of bankruptcy within 5 years
-- Moderate risk: 10% probability of bankruptcy within 10 years 
-- Safe: Less than 10% probability of bankruptcy within 10 years
-'''
-
-years_thresholds = np.asarray(years_series)
-safe_threshold = 0.01*years_thresholds
-substantial_threshold = 0.05*years_thresholds
-critical_threshold = 0.1666*years_thresholds
-
-safe_threshold = safe_threshold.tolist()
-substantial_threshold = substantial_threshold.tolist()
-critical_threshold = critical_threshold.tolist()
-
-# Risk Assessment Graph Plot
-
-#ax.plot([years_thresholds, years_thresholds], [safe_threshold, safe_threshold], "k--")
-#ax.plot([years_thresholds, years_thresholds], [substantial_threshold, substantial_threshold], "k--")
-#ax.plot([0., years], [critical_threshold, critical_threshold], "k--")
-
-plt.suptitle('Risk Assessment')
-plt.plot(years_series, PBS)
-plt.plot(years_series, safe_threshold, "r--", label = "safe/moderate")
-plt.plot(years_series, substantial_threshold, "r--", label = "moderate/substantial")
-plt.plot(years_series, critical_threshold, "r--", label = "substantial/critical")
-
-plt.ylim(0,1)
-plt.xlim(0,years)
-plt.grid(True)
-plt.xlabel('Time (Years)')
-plt.ylabel('Probability of Bankruptcy')
-plt.show()
+PBS = calc_probability_of_bankruptcy(roi, ROI_THRESHOLD, num_years)
 
 
 
 
 
+def update_cogs(states, step):
+    """Calculates cogs at this step
 
-# Formulas for Produtivity KPIs
-
-def calc_eletricity_kpi(annual_yield, annual_energy_consumption):
-    elec_kpi = annual_yield / annual_energy_consumption
-    return elec_kpi
-
-def calc_labour_kpi(annual_yield, annual_labour):
-    labour_kpi = annual_yield / annual_labour
-    return labour_kpi
-
-def calc_cultivation_area_kpi(annual_yield, land_area, GROWING_AREA_RATIO_TO_TOTAL):
-    cultivation_kpi = annual_yield / (land_area * GROWING_AREA_RATIO_TO_TOTAL)
-    return cultivation_kpi
-
-def calc_cost_performance(opex, cogs, revenue):
-    CP = revenue/(opex+cogs)
-    return CP
+    Notes
+    -----
+    seeds_cost + nutrients_cost + co2_cost + (labour_cost * 50) + packaging costs + media costs
+    
+    Can adjust for days/weekly/monthly/annually in the future - ASSUMED: CONSUMABLES PURCHASED MONTHLY
+    """
+    cogs_annual = states['initial_state']['yield_potential'] * 2
+    cogs_monthly = cogs_annual / YEARLY_TO_MONTHLY_31
+    if step % DAYS_IN_MONTH == 0:
+        states['cogs'][step] = cogs_monthly
 
 
+def update_labour(states, step):
+    """Calculates labour at this step
+    
+    Notes
+    ------
+    Direct farm labour cost = Number of staff working full-time x wages x 30 hours
+    Generalisation if statement on farm labour required if unknown
+    """
+    farm_hours = states['initial_state']['yield_potential']  * 0.2
+    wage = 7
+    labour_annual = farm_hours * wage
+    labour_monthly = labour_annual / YEARLY_TO_MONTHLY_31
+    if step % DAYS_IN_MONTH == 0:
+        states['labour'][step] = labour_monthly
 
-#Script for Productivity KPIs
+
+def update_utilities(states, step):
+    """Calculates utilities at this step
+    """
+    water_consumption = states['initial_state']['yield_potential'] 
+    energy_consumption = states['initial_state']['yield_potential'] 
+    utilities_annual = water_consumption * energy_consumption
+    utilties_monthly = utilities_annual / YEARLY_TO_MONTHLY_31
+    if step % DAYS_IN_MONTH == 0:
+        states['utilities'][step] = utilties_monthly
+
+
+
+def setup_simulation(num_timesteps, timestep):
+    """Sets up the data structure for the simulation"""
+    states = {
+        'initial_state' : None,
+        'num_timesteps' : num_timesteps,
+        'timestep' : timestep,
+        'cogs' : np.zeros(num_timesteps, dtype=float),
+        'labour' : np.zeros(num_timesteps, dtype=float),
+        'utilities' : np.zeros(num_timesteps, dtype=float),
+        'opex' : np.zeros(num_timesteps, dtype=float),
+        'revenue' : np.zeros(num_timesteps, dtype=float),
+        'loan_repayments' : np.zeros(num_timesteps, dtype=float),
+        'tax_payments' : np.zeros(num_timesteps, dtype=float),
+        'yield' : np.zeros(num_timesteps, dtype=float),
+        'sales' : np.zeros(num_timesteps, dtype=float),
+    }
+    return states
+
+
+def set_initial_state(states, user_inputs):
+    """Calculates initial parameters that won't change during the simulation"""
+    initial_state = {}
+    initial_state['capex']  = calc_capex(user_inputs['land_area'])
+    initial_state['yield_potential'] = calc_yield(user_inputs['land_area'],
+                                           user_inputs['growing_area_ratio_to_total'],
+                                           user_inputs['no_of_tiers'],
+                                           user_inputs['crops_per_area'])
+    states['initial_state'] = initial_state
+
+def update_states(states, step):
+    """ Updates each quantity that changes with a timestep"""
+    update_cogs(states, step)
+    update_utilities(states, step)
+    update_labour(states, step)
+
+
+def calculate_opex(metrics, states):
+    metrics['opex'] = states['utilities'] = states['labour']
+
+
+def calculate_metrics(states):
+    metrics = {
+        'num_timesteps' : states['num_timesteps'],
+     }
+    calculate_opex(metrics, states)
+    return metrics
+
+
+def plot(metrics):
+    x_axis = [i for i in range(metrics['opex'].size)]
+    plt.plot(x_axis, metrics['opex'])
+    plt.xlabel('Timestep')
+    plt.ylabel('Opex')
+    plt.show()
+
+
+user_inputs = {
+    'yield_required' : 9000, #Annual yield (kg)
+    'harvest_weight' : 0.1, # 100g of lettuce
+    'land_area' : 200,
+    'crop_price' : 10, # £ per kg
+    'crops_per_area' : 20, # per sq-m of growbed
+    'no_of_tiers' : 15,
+    'growing_area_ratio_to_total' : 0.5,
+}
+
+num_years = 5
+num_timesteps = DAYS_IN_YEAR * num_years
+timestep = datetime.timedelta(days=1)
+states = setup_simulation(num_timesteps, timestep)
+# Calculate initial parameters
+set_initial_state(states, user_inputs)
+# Run simulation
+for step in range(num_timesteps):
+    update_states(states, step)
+metrics = calculate_metrics(states)
+plot(metrics)
+
+
+
+
+
+# def plot(num_years, roi, PBS):
+
+#     years_series = [i for i in range(num_years + 1)]  # Creation of time series for years
+
+#     #Plot
+#     plt.plot(years_series, roi)
+#     plt.xlabel('Years')
+#     plt.ylabel('Annual ROI')
+#     plt.show()
+
+
+#     # Setting up Risk Assessment Plot
+
+#     fig, ax = plt.subplots()
+#     ax.plot(years_series, PBS, 1, color="g")
+
+#     # Threshold Lines
+
+#     '''
+#     - Critical: 50% probability of bankruptcy within 3 years
+#     - Substantial risk: 25% probability of bankruptcy within 5 years
+#     - Moderate risk: 10% probability of bankruptcy within 10 years 
+#     - Safe: Less than 10% probability of bankruptcy within 10 years
+#     '''
+
+#     years_thresholds = np.asarray(years_series)
+#     safe_threshold = 0.01 * years_thresholds
+#     substantial_threshold = 0.05 * years_thresholds
+#     critical_threshold = 0.1666 * years_thresholds
+
+#     safe_threshold = safe_threshold.tolist()
+#     substantial_threshold = substantial_threshold.tolist()
+#     critical_threshold = critical_threshold.tolist()
+
+#     # Risk Assessment Graph Plot
+
+#     #ax.plot([years_thresholds, years_thresholds], [safe_threshold, safe_threshold], "k--")
+#     #ax.plot([years_thresholds, years_thresholds], [substantial_threshold, substantial_threshold], "k--")
+#     #ax.plot([0., years], [critical_threshold, critical_threshold], "k--")
+
+#     plt.suptitle('Risk Assessment')
+#     plt.plot(years_series, PBS)
+#     plt.plot(years_series, safe_threshold, "r--", label = "safe/moderate")
+#     plt.plot(years_series, substantial_threshold, "r--", label = "moderate/substantial")
+#     plt.plot(years_series, critical_threshold, "r--", label = "substantial/critical")
+
+#     plt.ylim(0,1)
+#     plt.xlim(0,num_years)
+#     plt.grid(True)
+#     plt.xlabel('Time (Years)')
+#     plt.ylabel('Probability of Bankruptcy')
+#     plt.show()
+
+
+
+
+
+
+# # Formulas for Produtivity KPIs
+
+# def calc_eletricity_kpi(annual_yield, annual_energy_consumption):
+#     elec_kpi = annual_yield / annual_energy_consumption
+#     return elec_kpi
+
+# def calc_labour_kpi(annual_yield, annual_labour):
+#     labour_kpi = annual_yield / annual_labour
+#     return labour_kpi
+
+# def calc_cultivation_area_kpi(annual_yield, land_area, GROWING_AREA_RATIO_TO_TOTAL):
+#     cultivation_kpi = annual_yield / (land_area * GROWING_AREA_RATIO_TO_TOTAL)
+#     return cultivation_kpi
+
+# def calc_cost_performance(opex, cogs, revenue):
+#     CP = revenue/(opex+cogs)
+#     return CP
+
+
+
+# #Script for Productivity KPIs
 
