@@ -25,6 +25,7 @@ class TimeStepper():
     def is_month_end(self):
         return self.step % self.DAYS_IN_MONTH == 0
 
+
 def calc_capex(land_area):
     '''
     PP. 51 of Plant Factory
@@ -35,7 +36,6 @@ def calc_capex(land_area):
     return capex
 
 
-# Annual Productivity
 def calc_yield(land_area, GROWING_AREA_RATIO_TO_TOTAL, no_of_tiers, crops_per_area, harvest_weight):
     '''
     PP. 51 of Plant Factory
