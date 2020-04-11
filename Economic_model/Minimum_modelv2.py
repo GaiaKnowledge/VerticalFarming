@@ -23,7 +23,9 @@ class TimeStepper():
         self.start_date = start_date or datetime.date.today()
 
     def is_month_end(self):
-        return self.step % self.DAYS_IN_MONTH == 0
+        if self.timestep.days == 1:
+            return self.step % self.DAYS_IN_MONTH == 0
+        raise NotImplementedError("Only implemented for day timestep")
 
 
 def calc_capex(land_area):
@@ -129,22 +131,23 @@ def update_states(states, timestepper):
     update_labour(states, timestepper)
 
 
-def calculate_opex(metrics, states):
-    metrics['opex'] = states['utilities'] - states['labour']
-
-
 def calculate_metrics(states, timestepper):
     """This is where we take what we've simulated and calculate any derived properties"""
     metrics = {
-        'num_timesteps' : timestepper.num_steps,
+        'timestepper' : timestepper,
      }
     calculate_opex(metrics, states)
     return metrics
 
 
+def calculate_opex(metrics, states):
+    """Calculate the Operational Expenditure"""
+    metrics['opex'] = states['utilities'] - states['labour']
+
+
 def plot(metrics):
     """Draw the graphs we have calculated"""
-    x_axis = [i for i in range(metrics['opex'].size)]
+    x_axis = [i for i in range(metrics['timestepper'].num_steps)]
     plt.plot(x_axis, metrics['opex'])
     plt.xlabel('Timestep')
     plt.ylabel('Opex')
