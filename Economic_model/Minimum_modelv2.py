@@ -81,8 +81,8 @@ def update_cogs(states, timestepper):
     
     Can adjust for days/weekly/monthly/annually in the future - ASSUMED: CONSUMABLES PURCHASED MONTHLY
     """
-    cogs_monthly = states['initial_state']['cogs_annual'] / timestepper.YEARLY_TO_MONTHLY_31
     if timestepper.is_month_end():
+        cogs_monthly = states['initial_state']['cogs_annual'] / timestepper.YEARLY_TO_MONTHLY_31
         states['cogs'][step] = cogs_monthly
 
 
@@ -94,16 +94,16 @@ def update_labour(states, timestepper):
     Direct farm labour cost = Number of staff working full-time x wages x 30 hours
     Generalisation if statement on farm labour required if unknown
     """
-    labour_monthly = states['initial_state']['labour_annual'] / timestepper.YEARLY_TO_MONTHLY_31
     if timestepper.is_month_end():
+        labour_monthly = states['initial_state']['labour_annual'] / timestepper.YEARLY_TO_MONTHLY_31
         states['labour'][step] = labour_monthly
 
 
 def update_utilities(states, timestepper):
     """Calculates utilities at this step
     """
-    utilties_monthly = states['initial_state']['utilities_annual'] / timestepper.YEARLY_TO_MONTHLY_31
     if timestepper.is_month_end():
+        utilties_monthly = states['initial_state']['utilities_annual'] / timestepper.YEARLY_TO_MONTHLY_31
         states['utilities'][step] = utilties_monthly
 
 
