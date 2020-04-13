@@ -34,11 +34,11 @@ def calc_capex(land_area):
     Initial cost including necessary facilities (15 tiers, 50cm distance between tiers)
     $4000 USD per sq-m x 0.8 for £
     '''
-    capex = 4000*0.8*land_area
+    capex = 4000 * 0.8 * land_area
     return capex
 
 
-def calc_yield(land_area, GROWING_AREA_RATIO_TO_TOTAL, no_of_tiers, crops_per_area, harvest_weight):
+def calc_yield(land_area, growing_area_ratio_total, no_of_tiers, crops_per_area, harvest_weight):
     '''
     PP. 51 of Plant Factory
     3000 lettuce heads per sq-m per year (80-100g fresh weight)
@@ -49,9 +49,27 @@ def calc_yield(land_area, GROWING_AREA_RATIO_TO_TOTAL, no_of_tiers, crops_per_ar
     12-15 days to harvest
     20-22 days seed to seedling
     '''
-    yield_potential = land_area * GROWING_AREA_RATIO_TO_TOTAL\
+    yield_potential = land_area * growing_area_ratio_total \
                       * crops_per_area * no_of_tiers * harvest_weight
     return yield_potential
+
+
+def cogs_annual(yield_potential):
+    """Calculate annual cogs from annual potential yield"""
+    return yield_potential * 2
+
+
+def labour_annual(yield_potential, wage=7):
+    """Calculate annual labour cost from annual potential yield"""
+    farm_hours = yield_potential  * 0.2
+    return farm_hours * wage
+
+
+def utilities_annual(yield_potential):
+    """Calculate annual utility cost from annual potential yield"""
+    water_consumption = yield_potential
+    energy_consumption = yield_potential
+    return water_consumption * energy_consumption
 
 
 def update_cogs(states, timestepper):
@@ -63,8 +81,7 @@ def update_cogs(states, timestepper):
     
     Can adjust for days/weekly/monthly/annually in the future - ASSUMED: CONSUMABLES PURCHASED MONTHLY
     """
-    cogs_annual = states['initial_state']['yield_potential'] * 2
-    cogs_monthly = cogs_annual / timestepper.YEARLY_TO_MONTHLY_31
+    cogs_monthly = states['initial_state']['cogs_annual'] / timestepper.YEARLY_TO_MONTHLY_31
     if timestepper.is_month_end():
         states['cogs'][step] = cogs_monthly
 
@@ -77,10 +94,7 @@ def update_labour(states, timestepper):
     Direct farm labour cost = Number of staff working full-time x wages x 30 hours
     Generalisation if statement on farm labour required if unknown
     """
-    farm_hours = states['initial_state']['yield_potential']  * 0.2
-    wage = 7
-    labour_annual = farm_hours * wage
-    labour_monthly = labour_annual / timestepper.YEARLY_TO_MONTHLY_31
+    labour_monthly = states['initial_state']['labour_annual'] / timestepper.YEARLY_TO_MONTHLY_31
     if timestepper.is_month_end():
         states['labour'][step] = labour_monthly
 
@@ -88,10 +102,7 @@ def update_labour(states, timestepper):
 def update_utilities(states, timestepper):
     """Calculates utilities at this step
     """
-    water_consumption = states['initial_state']['yield_potential'] 
-    energy_consumption = states['initial_state']['yield_potential'] 
-    utilities_annual = water_consumption * energy_consumption
-    utilties_monthly = utilities_annual / timestepper.YEARLY_TO_MONTHLY_31
+    utilties_monthly = states['initial_state']['utilities_annual'] / timestepper.YEARLY_TO_MONTHLY_31
     if timestepper.is_month_end():
         states['utilities'][step] = utilties_monthly
 
@@ -117,12 +128,17 @@ def set_initial_state(states, user_inputs):
     """Calculates initial parameters that won't change during the simulation"""
     initial_state = {}
     initial_state['capex']  = calc_capex(user_inputs['land_area'])
-    initial_state['yield_potential'] = calc_yield(user_inputs['land_area'],
-                                                  user_inputs['growing_area_ratio_to_total'],
-                                                  user_inputs['no_of_tiers'],
-                                                  user_inputs['crops_per_area'],
-                                                  user_inputs['harvest_weight'])
+    yield_potential = calc_yield(user_inputs['land_area'],
+                                 user_inputs['growing_area_ratio_to_total'],
+                                 user_inputs['no_of_tiers'],
+                                 user_inputs['crops_per_area'],
+                                user_inputs['harvest_weight'])
+    initial_state['yield_potential'] = yield_potential
+    initial_state['labour_annual'] = labour_annual(yield_potential)
+    initial_state['cogs_annual'] = cogs_annual(yield_potential)
+    initial_state['utilities_annual'] = utilities_annual(yield_potential)
     states['initial_state'] = initial_state
+
 
 def update_states(states, timestepper):
     """ Updates each quantity that changes with a timestep"""
