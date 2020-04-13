@@ -114,7 +114,6 @@ def setup_simulation(num_timesteps):
         'cogs' : np.zeros(num_timesteps, dtype=float),
         'labour' : np.zeros(num_timesteps, dtype=float),
         'utilities' : np.zeros(num_timesteps, dtype=float),
-        'opex' : np.zeros(num_timesteps, dtype=float),
         'revenue' : np.zeros(num_timesteps, dtype=float),
         'loan_repayments' : np.zeros(num_timesteps, dtype=float),
         'tax_payments' : np.zeros(num_timesteps, dtype=float),
