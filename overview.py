@@ -12,6 +12,12 @@ import numpy as np
 from dateutil.relativedelta import *
 import random
 import matplotlib.pyplot as plt
+import os
+
+cwd = os.getcwd()  # Get the current working directory (cwd)
+files = os.listdir(cwd)  # Get all the files in that directory
+
+
 
 years = 15 # Time series length !!UP TO 20!!
 days_in_year = 365.25
@@ -44,7 +50,7 @@ Spectra_Blade_Single_Sided_J = Lights('Intravision Spectra Blade Single Sided - 
 def get_scenario():
 
 
-    input_filepath = 'Current_Financial_Model.xlsx' # Make a copy and call spreadsheet this name
+    input_filepath = '/Users/Francis/PycharmProjects/VerticalFarming/Current_Financial_Model.xlsx' # Make a copy and call spreadsheet this name
     inputs = pd.read_excel(input_filepath, index_col=0).to_dict()
     inputs = inputs['Inputs']
 
