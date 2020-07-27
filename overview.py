@@ -44,7 +44,7 @@ Spectra_Blade_Single_Sided_J = Lights('Intravision Spectra Blade Single Sided - 
 def get_scenario():
 
 
-    input_filepath = 'Financial_Model1.xlsx'
+    input_filepath = 'Current_Financial_Model.xlsx' # Make a copy and call spreadsheet this name
     inputs = pd.read_excel(input_filepath, index_col=0).to_dict()
     inputs = inputs['Inputs']
 
