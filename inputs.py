@@ -150,6 +150,13 @@ class Scenario(object):
         self.insurance_pilot = None
         self.insurance_full = None
 
+        self.capex_pilot = None
+        self.capex_full = None
+        self.capex_lights = None
+        self.capex_facilities = None
+        self.capex_building = None
+
+
     def __str__(self):
         """String representation"""
 

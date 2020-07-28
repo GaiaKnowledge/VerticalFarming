@@ -13,25 +13,17 @@ from dateutil.relativedelta import *
 import random
 import matplotlib.pyplot as plt
 import os
+import pba
+
+from openpyxl import Workbook
 
 cwd = os.getcwd()  # Get the current working directory (cwd)
 files = os.listdir(cwd)  # Get all the files in that directory
 
-
-
 years = 15 # Time series length !!UP TO 20!!
 days_in_year = 365.25
 months_in_a_year = 12
-simulations = 20
-
-building_lifetime = 15
-facilities_lifetime = 10
-
-# Replace with values from Scenario? or calculate
-lights_capex = 66000
-facilities_capex = 150000
-building_capex = 0
-capex = lights_capex + facilities_capex + building_capex
+simulations = 100
 
 #Crops
 basil_lemon = Crops('Basil - Lemon', 'n/a',	'n/a',	14,	42,	'n/a', 'n/a', 'n/a', 13.067,	'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 0.03, 0.97, 'herbs')
@@ -197,7 +189,21 @@ def get_scenario():
     scenario.insurance_pilot = inputs['insurance_pilot']
     scenario.insurance_full = inputs['insurance_full']
 
+    scenario.capex_pilot = inputs['capex_pilot']
+    scenario.capex_full = inputs['capex_full']
+    scenario.capex_lights = inputs['capex_lights']
+    scenario.capex_facilities = inputs['capex_facilities']
+    scenario.capex_building = inputs['capex_building']
+
     return scenario
+
+def export_results(financial_annual_overview, financial_summary, risk_dataframe):
+    with pd.ExcelWriter('/Users/Francis/PycharmProjects/VerticalFarming/results.xlsx') as writer:
+        #financial_summary.to_excel(writer, "results.xlsx")
+        financial_annual_overview.to_excel(writer, "results.xlsx")
+        #risk_dataframe.to_excel(writer, "results.xlsx")
+    return
+
 # Staff List ( Edit this to fill in staff names)
 def get_staff_list(scenario):
     # Staff
@@ -252,14 +258,20 @@ def get_gp(scenario):
     return gp
 
 # CAPEX
-def calc_capex(facility_size_pilot, facility_size_full):
-    '''
+def calc_capex(scenario, gp):
+    """"
     PP. 51 of Plant Factory
     Initial cost including necessary facilities (15 tiers, 50cm distance between tiers)
     $4000 USD per sq-m x 0.8 for £
-    '''
-    capex_pilot = 4000*0.8*facility_size_pilot
-    capex_full = 4000*0.8*facility_size_full
+    """
+
+    if scenario.capex_pilot == 0:
+        capex_pilot = 4000 * 0.8 * scenario.facility_size_pilot
+        capex_full = 4000 * 0.8 * gp.facility_size_full
+    else:
+        capex_pilot = scenario.capex_pilot
+        capex_full = scenario.capex_full
+
     return capex_pilot, capex_full
 
 # Yields
@@ -404,20 +416,22 @@ def calc_grants_rev(years):
 
 def calc_direct_labour(farmhand, delivery, part_time, years, months_in_a_year, scenario):
 
-   cogs_direct_labour = [0]
-   labour_efficency_counter = 0
+    cogs_direct_labour = [0]
+    labour_efficency_counter = 0
+    mu, sigma = scenario.labour_improvement, 2
 
-   for y in range(1, years+1):
+    for y in range(1, years+1):
 
-       if y == 1:
+        if y == 1:
             direct_labour_cost = months_in_a_year*((farmhand.salary * farmhand.count_pilot) + (delivery.salary * delivery.count_pilot) + (part_time.count_pilot * part_time.hours * part_time.wage))
-       elif y > 1:
+        elif y > 1:
             direct_labour_cost = months_in_a_year*((farmhand.salary * farmhand.count_full) + (delivery.salary * delivery.count_full) + (part_time.count_full * part_time.hours * part_time.wage * (1-labour_efficency_counter)))
 
-       labour_efficency_counter += scenario.labour_improvement
-       cogs_direct_labour.append(direct_labour_cost)
+        labour_efficency_counter += np.random.normal(mu, sigma)
+        cogs_direct_labour.append(direct_labour_cost)
 
-   return cogs_direct_labour
+    return cogs_direct_labour
+
 def calc_growing_media(total_sales):
 
     percent_of_growing_media_to_sales = 0.025
@@ -427,9 +441,9 @@ def calc_growing_media(total_sales):
     return cogs_media
 def calc_packaging(scenario, years, w1, w2, w3, w4):
 
-    cogs_packaging =[0]
+    cogs_packaging =[]
 
-    for y in range(0, years):
+    for y in range(years+1):
         annual_packaging_cost = 0
         annual_packaging_cost += (w1[y] / scenario.crop1_product_weight)
         # annual_packaging_cost += (w2[y]/scenario.crop2_product_weight)
@@ -442,6 +456,7 @@ def calc_packaging(scenario, years, w1, w2, w3, w4):
         cogs_packaging.append(annual_packaging_cost)
 
     return cogs_packaging
+
 def calc_seeds_nutrients(crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants, crop1, crop2, crop3, crop4):
     cogs_seeds_crop1 = [i * crop1.seed_cost * (1/crop1.germination_rate) for i in crop1_no_of_plants]
     cogs_seeds_crop2 = [i * crop2.seed_cost * (1/crop2.germination_rate) for i in crop2_no_of_plants]
@@ -538,11 +553,6 @@ def calc_insurance(scenario, years, months_in_a_year):
     return opex_insurance
 
 
-
-
-
-    return opex_insurance
-
 def calc_distribution(scenario, years, months_in_a_year):
 
     opex_distribution = [0]
@@ -572,46 +582,58 @@ def calc_loan_repayments(scenario, years):
         loan_balance.append(round(loan_balance[y-1]-loan_repayments[y]+(loan_balance[y-1]*scenario.loan_interest),2))
     return loan_repayments, loan_balance
 
-def calc_depreciation(scenario, lights, avg_photoperiod, days_in_year, lights_capex, building_capex, facilities_capex, building_lifetime, faciltiies_lifetime):
+def calc_depreciation(scenario, lights, avg_photoperiod, days_in_year):
 
     """Construction - Depreciation 15 years for building. Typically accounts or 21 production costs
     10 years for facilities
+    Lights - 5 years typically for LEDs but dependant for lifetime of LEDs
+    """
 
-    Lights - 5 years typically for LEDs but dependant for lifetime of LEDs"""
+    building_lifetime = 15
+    facilities_lifetime = 10
 
     # Building
     building_depreciaiton_percent = 1/building_lifetime
-    building_depreciation = building_capex * building_depreciaiton_percent
+    building_depreciation = scenario.capex_building * building_depreciaiton_percent
 
     # Facilities
-    facilities_depreciation_percent = 1/ faciltiies_lifetime
-    facilities_depreciation = facilities_capex * facilities_depreciation_percent
+    facilities_depreciation_percent = 1/facilities_lifetime
+    facilities_depreciation = scenario.capex_facilities * facilities_depreciation_percent
 
     # Lights
     life_time_acceleration_factor = 0.8
     life_time = lights.life_time * life_time_acceleration_factor # Hours
     life_span = (life_time / avg_photoperiod)/days_in_year
     lights_depreciation_percent = 1/life_span
-    lights_depreciation = lights_depreciation_percent * lights_capex
+    lights_depreciation = lights_depreciation_percent * scenario.capex_lights
+
+    # Pilot
+    pilot_depreciation = (lights_depreciation+facilities_depreciation+building_depreciation)/scenario.growing_area_mulitplier
+
     depreciation = [0]
 
     for y in range(1, years+1):
-
-        depreciation.append(lights_depreciation + facilities_depreciation + building_depreciation)
+        if y == 1:
+            depreciation.append(pilot_depreciation)
+        elif y > 1:
+            depreciation.append(lights_depreciation + facilities_depreciation + building_depreciation)
 
     return depreciation
 
-def calc_roi(capex, financial_annual_overview, years):
+def calc_roi(scenario, financial_annual_overview, years):
 
     roi = []
 
     for y in range(years+1):
-        roi.append((financial_annual_overview.iloc[30,y] / capex)*100)
+        if y >= 2:
+            roi.append((financial_annual_overview.iloc[30,y] / scenario.capex_full)*100)
+        elif y < 2:
+            roi.append((financial_annual_overview.iloc[30,y] / scenario.capex_pilot)*100)
 
     return roi
 
-def calc_payback_period(capex, financial_annual_overview, years):
-    investment_balance = [capex]
+def calc_payback_period(scenario, financial_annual_overview, years):
+    investment_balance = [scenario.capex_full]
     payback_period_list = []
 
     for y in range(years):
@@ -640,7 +662,7 @@ def build_dataframe(timeseries_yearly, timeseries_monthly):
                          'OPEX - Rent', 'OPEX - Staff (non-direct)', 'OPEX - Other Costs','OPEX - Insurance', 'OPEX - Distribution', 'Total OPEX',                                                            
                          'EBITDA',                                                                                                                                                                            
                          'Loan Repayments', 'Loan Balance', 'Taxes', 'Depreciation',                                                                                                                          
-                         'Net Profit'] ,columns=timeseries_yearly)
+                         'Net Profit', 'Return on Investment'] ,columns=timeseries_yearly)
 
     financial_monthly_overview = pd.DataFrame(index= ['Yield Crop 1', 'Yield Crop 2', 'Yield Crop 3', 'Yield Crop 4',
                          'Revenue - Crop Sales', 'Revenue - Value-Added Products', 'Revenue - Education', 'Revenue - Tourism', 'Revenue - Hospitality', 'Revenue - Grants', 'Total Revenue',
@@ -649,7 +671,7 @@ def build_dataframe(timeseries_yearly, timeseries_monthly):
                          'OPEX - Rent', 'OPEX - Staff (non-direct)', 'OPEX - Other Costs','OPEX - Insurance', 'OPEX - Distribution', 'Total OPEX',
                          'EBITDA',
                          'Loan Repayments', 'Loan Balance', 'Taxes', 'Depreciation',
-                         'Net Profit'] ,columns=timeseries_monthly)
+                         'Net Profit', 'Return on Investment'] ,columns=timeseries_monthly)
     return financial_annual_overview, financial_monthly_overview
 def crop_and_revenue_to_df(financial_annual_overview, w1, w2, w3, w4, total_sales):
     financial_annual_overview.loc['Yield Crop 1'] = w1
@@ -739,11 +761,16 @@ def build_bankruptcy_definition(years):
     bankruptcy_definition =[]
     for y in range(years+1):
         # Threshold for bankruptcy
-        bankruptcy_definition.append(y*2.8571 - 10) # Year 0 - below 10% ROI, Year 7 - 10% ROI
+        if y <= 7:
+            bankruptcy_definition.append(y*2.8571 - 10) # Year 0 - below 10% ROI, Year 7 - 10% ROI
+        elif y > 7:
+            bankruptcy_definition.append(10)
+
     return bankruptcy_definition
 
 
     return bankruptcy_definition
+
 def build_risk_assessment_counter(years):
     risk_counter = []
     for y in range(years+1):
@@ -816,7 +843,7 @@ def calc_pathogen_outbreak(scenario, years, w1, w2, w3, w4):
 
         return w1_risk, w2_risk, w3_risk, w4_risk
 
-def calc_repairs(scenario, lights_capex, facilities_capex, years):
+def calc_repairs(scenario, years):
         """Repairs
              After 12 months
              Max: 20% of equipment
@@ -849,46 +876,94 @@ def calc_repairs(scenario, lights_capex, facilities_capex, years):
         for y in range(years+1):
 
             if repair_occurence[y] == 1:
-                repair.append((lights_capex + facilities_capex) * np.random.beta(0.5, 40))
+                repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(0.5, 40))
             elif repair_occurence == 2:
-                repair.append((lights_capex + facilities_capex) * np.random.beta(2.5, 8))
+                repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(2.5, 8))
             else:
                 repair.append(0)
 
         return repair
 #
-# def customer_withdrawal(scenario, years, total_sales):
-#         """Customer Withdrawl
-#            Reduced Revenue
-#            Max: 30% Revenue
-#            Min: 1% revenue
-#            AVG: 5%
-#            Std Dev: 8
-#            Frequency: 1x every 2 years
-#            Typical case: To retail business model
-#         """
+def calc_customer_withdrawal(scenario, years, total_sales):
+    """    Reduced Revenue
+           Max: 30% Revenue
+           Min: 1% revenue
+           AVG: 5%
+           Std Dev: 8
+           Frequency: 1x every 2 years
+           Typical case: To retail business model
+    """
+    if  scenario.business_model == 'Wholesale':
+        p_withdrawal = 0.05  # Probability of customer withdrawal for given year
+        p_no_withdrawal = 0.95  # Probability of no withdrawal for given year
+        customer_withdrawal_occurrence = np.random.choice(2, years, p=[p_withdrawal, p_no_withdrawal])
+    elif scenario.business_model == 'Retail':
+        p_withdrawal = 0.05  # Probability of customer withdrawal for given year
+        p_no_withdrawal = 0.95   # Probability of no withdrawal for given year
+        customer_withdrawal_occurrence = np.random.choice(2, years, p=[p_withdrawal, p_no_withdrawal])
+    elif scenario.business_model == 'Hybrid':
+        p_withdrawal = 0.05  # Probability of customer withdrawal for given year
+        p_no_withdrawal = 0.95 # Probability of no withdrawal for given year
+        customer_withdrawal_occurrence = np.random.choice(2, years, p=[p_withdrawal, p_no_withdrawal])
+
+    customer_withdrawal_occurrence = [0, *customer_withdrawal_occurrence]
+
+    customer_withdrawal = []
+
+    for y in range(years+1):
+
+        if customer_withdrawal_occurrence[y] == 1 and scenario.business_model == 'Wholesale':
+            customer_withdrawal.append(total_sales[y] * np.random.beta(5, 10))
+        elif customer_withdrawal_occurrence[y] == 1 and scenario.business_model == 'Retail':
+            customer_withdrawal.append(total_sales[y] * np.random.beta(0.5, 40))
+        elif customer_withdrawal_occurrence[y] == 1 and scenario.business_model == 'Hybrid':
+            customer_withdrawal.append(total_sales[y] * np.random.beta(1, 20))
+        else:
+            customer_withdrawal.append(0)
+
+    return customer_withdrawal
 #
-#
-#     if  scenario.business_model == 'Wholesale':
-#         p_withdrawal = 0.65  # Probability of small repair for a given year
-#         p_big_repair = 0.02  # Probability of a big repair for a given year
-#         p_no_repair = 0.33  # Probability of no repair needed for a given year
-#         repair_occurence = np.random.choice(3, years, p=[p_no_repair, p_small_repair, p_big_repair])
-#
-#
-#         return customer_withdrawal
-#
-def labour_challenges():
-#         """Labour Challenges
-#             High labour costs, reduced yield
-#             Max: 50% more labour costs
-#             Minimum: 5% more labour reduced yield
-#             AVG: 15%
-#             Std Dev: 5
-#             Frequency: Continous after 6 months
-#             Cause: Low automation, high no. of tiers
-#         """
-    return labour_challenges
+def labour_challenges(scenario, years, total_sales, cogs_labour):
+        """Labour Challenges
+             High labour costs, reduced yield
+             Max: 5% more labour, reduced yield (1 month)
+             AVG: 15%
+             Std Dev: 5
+             Frequency: Continous after 6 months
+             Cause: Low automation, high no. of tiers"""
+        if scenario.automation_level == 'High':
+             p_sabotage = 0.01  # Probability of a labour mistake resulting in lost crop
+             p_extra_cost = 0.05  # Probability of underestimated labour costs
+             p_no_issue = 0.94  # Probability of no problem
+             labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
+        elif scenario.automation_level == 'Medium':
+             p_sabotage = 0.03  # Probability of a labour mistake resulting in lost crop
+             p_extra_cost = 0.07  # Probability of underestimated labour costs
+             p_no_issue = 0.9  # Probability of no problem
+             labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
+        elif scenario.automation_level == 'Low':
+             p_sabotage = 0.07  # Probability of a labour mistake resulting in lost crop
+             p_extra_cost = 0.15  # Probability of underestimated labour costs
+             p_no_issue = 0.78  # Probability of no problem
+             labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
+
+        labour_challenge_occurence = [0, *labour_challenge_occurence]
+
+        labour_damage = [0]
+        labour_extra_cost = [0]
+
+        for y in range(years + 1):
+             if labour_challenge_occurence[y] == 0:
+                 labour_damage.append(0)
+                 labour_extra_cost.append(0)
+             elif labour_challenge_occurence == 1:
+                 labour_damage.append(total_sales * np.random.beta(0.5, 50))
+                 labour_extra_cost.append(0)
+             elif labour_challenge_occurence == 2:
+                 labour_damage.append(0)
+                 labour_extra_cost.append(cogs_labour * np.random.beta(10, 50))
+
+        return labour_damage, labour_extra_cost
 
 def reduced_product_quality():
 #         """Reduced Product Quality
@@ -974,7 +1049,7 @@ scenario = get_scenario()
 ceo, headgrower, marketer, scientist, sales_person, manager, delivery, farmhand, admin, part_time = get_staff_list(scenario)
 end_date, timeseries_monthly, timeseries_yearly = get_calendar(scenario.start_date, years)
 gp = get_gp(scenario)
-capex_pilot, capex_full = calc_capex(scenario.facility_size_pilot, gp.facility_size_full)
+capex_pilot, capex_full = calc_capex(scenario, gp)
 risk_counter = build_risk_assessment_counter(years)
 
 byield_crop1, byield_crop2, byield_crop3, byield_crop4 = calc_best_yield(scenario, lettuce_fu_mix, basil_lemon, basil_genovese, none, years)
@@ -1004,7 +1079,7 @@ opex_insurance = calc_insurance(scenario, years, months_in_a_year)
 opex_distribution = calc_distribution(scenario, years, months_in_a_year)
  #
 loan_repayments, loan_balance = calc_loan_repayments(scenario, years)
-depreciation = calc_depreciation(scenario, Spectra_Blade_Single_Sided_J, avg_photoperiod, days_in_year, lights_capex, building_capex, facilities_capex, building_lifetime, facilities_lifetime)
+depreciation = calc_depreciation(scenario, Spectra_Blade_Single_Sided_J, avg_photoperiod, days_in_year)
 # Constructing Financial Overview Data Frame
 financial_annual_overview, financial_monthly_overview = build_dataframe(timeseries_yearly, timeseries_monthly)
 financial_annual_overview = crop_and_revenue_to_df(financial_annual_overview, w1, w2, w3, w4, total_sales)
@@ -1012,8 +1087,9 @@ financial_annual_overview = cogs_to_df(financial_annual_overview, cogs_labour, c
 financial_annual_overview = opex_to_df(financial_annual_overview, opex_rent, opex_salaries, opex_other_costs, opex_insurance, opex_distribution)
 financial_annual_overview = extra_to_df(financial_annual_overview, loan_repayments, loan_balance, scenario, depreciation)
 
-roi = calc_roi(capex, financial_annual_overview, years)
-investment_balance, payback_period = calc_payback_period(capex, financial_annual_overview, years)
+roi = calc_roi(scenario, financial_annual_overview, years)
+financial_annual_overview.loc['Return on Investment'] = roi
+investment_balance, payback_period = calc_payback_period(scenario, financial_annual_overview, years)
 
 financial_summary = build_financial_summary(financial_annual_overview, investment_balance, roi, timeseries_yearly)
 
@@ -1023,6 +1099,7 @@ bankruptcy_definition = build_bankruptcy_definition(years)
 risk_dataframe = build_risk_dataframe(financial_annual_overview)
 
 # Setting up Plots
+plt.close(fig=None)
 fig1, ax1 = plt.subplots()
 fig1, ax2 = plt.subplots()
 fig1, ax3 = plt.subplots()
@@ -1036,20 +1113,29 @@ for s in range(simulations):
      # Pathogen Outbreak
      w1_risk, w2_risk, w3_risk, w4_risk = calc_pathogen_outbreak(scenario, years, w1, w2, w3, w4)
      scrop1, scrop2, scrop3, scrop4, total_sales_risk = calc_produce_sales(w1_risk, w2_risk, w3_risk, w4_risk, scenario)
-     repair = calc_repairs(scenario, lights_capex, facilities_capex, years)
+     customer_withdrawal = calc_customer_withdrawal(scenario, years, total_sales_risk)
+     repair = calc_repairs(scenario, years)
+     labour_damage, labour_extra_cost = labour_challenges(scenario, years, total_sales_risk, cogs_labour)
 
      # Recomposing Dataframe
      risk_dataframe = crop_and_revenue_to_df(risk_dataframe, w1_risk, w2_risk, w3_risk, w4_risk, total_sales_risk)
+     risk_dataframe.loc['Revenue - Crop Sales'] -= customer_withdrawal
+     #risk_dataframe.loc['Revenue - Crop Sales'] -= labour_damage
+
      risk_dataframe = cogs_to_df(risk_dataframe, cogs_labour, cogs_media, cogs_packaging,
                                             cogs_seeds_nutrients, cogs_electricity, cogs_water)
+     #risk_dataframe.loc['COGS - Direct Labour'] += labour_extra_cost
+
+
      risk_dataframe = opex_to_df(risk_dataframe, opex_rent, opex_salaries, opex_other_costs,
                                             opex_insurance, opex_distribution)
-     risk_dataframe.loc['OPEX - Other Costs'] -= repair
+     risk_dataframe.loc['OPEX - Other Costs'] += repair
      risk_dataframe = extra_to_df(risk_dataframe, loan_repayments, loan_balance, scenario,
                                              depreciation)
 
      # ROI
-     roi_risk = calc_roi(capex, risk_dataframe, years)
+     roi_risk = calc_roi(scenario, risk_dataframe, years)
+     risk_dataframe.loc['Return on Investment'] = roi_risk
      risk_counter = risk_assessment(roi_risk, bankruptcy_definition, years, risk_counter)
 
      # COMMENT OUT IF NOT INTERESTED IN RISK PLOTS
@@ -1059,6 +1145,8 @@ for s in range(simulations):
 
 
 risk_assessment_probability = risk_assessment_probability(risk_counter, years, simulations)
+export_results(financial_annual_overview, financial_summary, risk_dataframe)
+
 
 ax1.plot(financial_annual_overview.columns, financial_annual_overview.loc['Total Revenue'], label='Revenue')
 ax1.plot(financial_annual_overview.columns, financial_annual_overview.loc['Total COGS'], label='COGS')
@@ -1107,5 +1195,3 @@ print('The farm is growing Crop1: {}, Crop2 :{}, Crop3: {} and Crop 4:{}'.format
 print('Estimated capital expenditure for full-scale farm is: £{}'.format(capex_full))
 print(financial_annual_overview)
 print(payback_period)
-
-#print(financial_summary)
