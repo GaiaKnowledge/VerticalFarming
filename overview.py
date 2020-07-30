@@ -13,7 +13,7 @@ from dateutil.relativedelta import *
 import random
 import matplotlib.pyplot as plt
 import os
-import pba
+from math import pi
 
 from openpyxl import Workbook
 
@@ -23,7 +23,7 @@ files = os.listdir(cwd)  # Get all the files in that directory
 years = 15 # Time series length !!UP TO 20!!
 days_in_year = 365.25
 months_in_a_year = 12
-simulations = 100
+simulations = 20
 
 #Crops
 basil_lemon = Crops('Basil - Lemon', 'n/a',	'n/a',	14,	42,	'n/a', 'n/a', 'n/a', 13.067,	'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 0.03, 0.97, 'herbs')
@@ -195,6 +195,18 @@ def get_scenario():
     scenario.capex_facilities = inputs['capex_facilities']
     scenario.capex_building = inputs['capex_building']
 
+    scenario.target_productivity_space = inputs['target_productivity_space']
+    scenario.target_productivity_energy = inputs['target_productivity_energy']
+    scenario.target_productivity_labour = inputs['target_productivity_labour']
+    scenario.target_productivity_water = inputs['target_productivity_water']
+    scenario.target_productivity_nutrients = inputs['target_productivity_nutrients']
+    scenario.target_productivity_volume = inputs['target_productivity_volume']
+    scenario.target_productivity_plants = inputs['target_productivity_plants']
+    scenario.target_productivity_labour = inputs['target_productivity_labour']
+    scenario.target_productivity_CO2_emit = inputs['target_productivity_CO2_emit']
+    scenario.target_productivity_CO2_miti = inputs['target_productivity_CO2_miti']
+    scenario.target_productivity_CO2_net = inputs['target_productivity_CO2_net']
+
     return scenario
 
 def export_results(financial_annual_overview, financial_summary, risk_dataframe):
@@ -344,7 +356,10 @@ def calc_no_of_plants(scenario, w1, w2, w3, w4):
     crop2_no_plants = [i / scenario.crop2_harvest_weight for i in w2]
     crop3_no_plants = [i / scenario.crop3_harvest_weight for i in w3]
     crop4_no_plants = [i / scenario.crop4_harvest_weight for i in w4]
-    return crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants
+
+    total_no_of_plants = [a + b + c + d for a, b, c, d in zip(crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants)]
+
+    return crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants, total_no_of_plants
 # Revenue
 
 def calc_produce_sales(w1, w2, w3, w4, scenario):
@@ -495,7 +510,7 @@ def calc_water(scenario, years, days_in_year):
         if y == 1:
             water_consumption.append(scenario.system_quantity * 0.95 * days_in_year + (1900*12))
         elif y > 1:
-            water_consumption.append(scenario.system_quantity * scenario.growing_area_mulitplier * 0.95 * days_in_year + (1900*12))
+            water_consumption.append((scenario.system_quantity * 0.95 * days_in_year + (1900*12)) * scenario.growing_area_mulitplier)
 
     cogs_water = [i * scenario.water_price for i in water_consumption]
 
@@ -625,10 +640,10 @@ def calc_roi(scenario, financial_annual_overview, years):
     roi = []
 
     for y in range(years+1):
-        if y >= 2:
+        #if y >= 2:
             roi.append((financial_annual_overview.iloc[30,y] / scenario.capex_full)*100)
-        elif y < 2:
-            roi.append((financial_annual_overview.iloc[30,y] / scenario.capex_pilot)*100)
+        #elif y < 2:
+        #   roi.append((financial_annual_overview.iloc[30,y] / scenario.capex_pilot)*100)
 
     return roi
 
@@ -648,9 +663,8 @@ def calc_payback_period(scenario, financial_annual_overview, years):
         payback_period = payback_period_list.index(1, 0, years+1)
     except ValueError:
         payback_period = 'The Farm it not economically sustainable and will not turn a profit during the {} years of simulation'.format(years)
-
+# Does the investment balance straddle zero - P-box scenario.
     return investment_balance, payback_period
-
 
 # Financial Dataframe Construction
 
@@ -878,7 +892,7 @@ def calc_repairs(scenario, years):
             if repair_occurence[y] == 1:
                 repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(0.5, 40))
             elif repair_occurence == 2:
-                repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(2.5, 8))
+                repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(1.5, 8))
             else:
                 repair.append(0)
 
@@ -1029,26 +1043,149 @@ def improved_labour_efficiency():
     return labour_efficiency
 #
 #
-def improved_light_efficiency():
-#         """Improved light efficiency
-#             Reduced wattage per hour of lighting systems
-#             Max: 50% reduction in COGS - direct labour
-#             Minimum: 10
-#             AVG: 30% # 30% efficiency improvement
-#             Std Dev: 3
-#             Frequency: After LEDs depreciate
-#             Cause: After LEDs depreciated update better lights
-#         """
-    return improved_light_efficiency
+def improved_light_efficiency(scenario):
+        """Improved light efficiency
+            Reduced wattage per hour of lighting systems
+            Max: 50% reduction in COGS - direct labour
+            Minimum: 10
+            AVG: 30% # 30% efficiency improvement
+            Std Dev: 3
+            Frequency: After LEDs depreciate
+            Cause: After LEDs depreciated update better lights
+        """
+        return improved_light_efficiency
 
 
+# Productivity Metrics
+def calc_productivity_metrics(timeseries_yearly, w1, w2, w3, w4, electricity_consumption, direct_labour,
+                              water_consumption, staff, nutrient_consumption, no_of_plants):
+    kg_of_CO2e_per_kwh = 0.283  # https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2019
+    tonnes = 1000
+    millions_of_litres = 1000000
+    kg_of_co2e_per_million_litres = 344
+    litres_per_kg_annual = 20
+    conventional_water_multiplier = 0.1  # Typically hydroponics is uses 10% less water than conventional farming
 
+    """
+    # Water
+    Information about water usage of conventional farming compared to hydroponic or vertical farming methods has been studied by Barbosa (2015).
+    Water usage depends on application method and crop. For lettuce conventionally grown, uses approximately 250 L/kg/year, whilst hydroponic methods use 20 L/kg/year. For 41,000kg yield per year, the usage is compared
+
+    # Energy
+    Energy to CO2e https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2019
+    Conversion factor from kJ to kWh 0.000277778
+    conversion factor from kJ/h to kWh 0.00666667
+    Assumption of energy used from HVAC system in Vertical farm per year	1927.799564 kWh/year
+    Assumption of energy used for conventionally grown lettuce	1100        1100 kJ/kg/y
+    Assumption of energy used for hydroponic  greenhouse grown lettuce	90000 kJ/kg/y
+    """
+
+    productivity_metrics = pd.DataFrame(
+        index=['Total Yield (kg)', 'Energy Consumption (kWh)', 'Direct Labour (man-hours)', 'Water Consumption (L)',
+               'Nutrient Consumption (kg)', 'No. of Plants', 'CO2 Emitted (kg CO2e)', 'CO2 Mitigated (kg CO2e)',
+               'Net CO2 (kg CO2e)'], columns=timeseries_yearly)
+
+    productivity_metrics.loc['Total Yield (kg)'] = [a + b + c + d for a, b, c, d in zip(w1, w2, w3, w4)]
+    productivity_metrics.loc['Energy Consumption (kWh)'] = electricity_consumption
+    productivity_metrics.loc['Direct Labour (man-hours)'] = direct_labour
+    productivity_metrics.loc['Water Consumption (L)'] = water_consumption
+    productivity_metrics.loc['Nutrient Consumption (kg)'] = nutrient_consumption
+    productivity_metrics.loc['No. of Plants'] = no_of_plants
+
+    productivity_co2_emit_energy = (productivity_metrics.loc['Energy Consumption (kWh)'] * (
+                1 - scenario.percentage_renewable_energy) * kg_of_CO2e_per_kwh / tonnes)
+    productivity_co2_emit_water = (((productivity_metrics.loc[
+                                         'Water Consumption (L)'] / millions_of_litres) * kg_of_co2e_per_million_litres) / tonnes)
+
+    productivity_metrics.loc['CO2 Emitted (kg CO2e)'] = productivity_co2_emit_energy + productivity_co2_emit_water
+
+    productivity_co2_miti_energy = ((productivity_metrics.loc[
+                                         'Energy Consumption (kWh)'] * scenario.percentage_renewable_energy * kg_of_CO2e_per_kwh) / tonnes)
+    productivity_co2_miti_water = ((((productivity_metrics.loc[
+                                          'Water Consumption (L)'] / conventional_water_multiplier) / millions_of_litres) * kg_of_co2e_per_million_litres) / tonnes)
+
+    productivity_metrics.loc['CO2 Mitigated (kg CO2e)'] = productivity_co2_miti_energy + productivity_co2_miti_water
+    productivity_metrics.loc['Net CO2 (kg CO2e)'] = productivity_metrics.loc['CO2 Mitigated (kg CO2e)'] - \
+                                                    productivity_metrics.loc['CO2 Emitted (kg CO2e)']
+
+    return productivity_metrics
+
+
+def calc_crop_productivity_metrics(productivity_metrics, gp, scenario):
+    crop_productivity_metrics = productivity_metrics.copy()
+    crop_productivity_metrics.rename(
+        index={0: 'Crop Productivity per Unit Area', 1: 'Crop Productivity per Unit Energy',
+               2: 'Crop Productivity per Unit Labour', 3: 'Crop Productivity per Unit Water',
+               4: 'Crop Productivity per Unit Nutrient', 5: 'Crop Productivity per Unit Growing Volume',
+               6: 'No. of Plants per unit area', 7: 'Yield per kg CO2 emitted', 8: 'Yield per kg CO2 mitigated',
+               8: 'Yield per kg Net CO2e'}, inplace=True)
+    crop_productivity_metrics.loc['Crop Productivity per Unit Area'] = productivity_metrics.loc[
+                                                                           'Total Yield (kg)'] / gp.growing_area_full
+    crop_productivity_metrics.loc['Crop Productivity per Unit Energy'] = productivity_metrics.loc['Total Yield (kg)'] / \
+                                                                         productivity_metrics.loc[
+                                                                             'Energy Consumption (kWh)']
+    crop_productivity_metrics.loc['Crop Productivity per Unit Labour'] = productivity_metrics.loc['Total Yield (kg)'] / \
+                                                                         productivity_metrics.loc[
+                                                                             'Direct Labour (man-hours)']
+    crop_productivity_metrics.loc['Crop Productivity per Unit Water'] = productivity_metrics.loc['Total Yield (kg)'] / \
+                                                                        productivity_metrics.loc[
+                                                                            'Water Consumption (L)']
+    crop_productivity_metrics.loc['Crop Productivity per Unit Nutrients'] = productivity_metrics.loc[
+                                                                                'Total Yield (kg)'] / \
+                                                                            productivity_metrics.loc[
+                                                                                'Nutrient Consumption (kg)']
+    crop_productivity_metrics.loc['Crop Productivity per Unit Growing Volume'] = productivity_metrics.loc[
+                                                                                     'Total Yield (kg)'] / (
+                                                                                             gp.growing_area_full * scenario.ceiling_height)
+    crop_productivity_metrics.loc['No. of Plants per unit area'] = productivity_metrics.loc['No. of Plants'] / (
+                gp.growing_area_full * scenario.ceiling_height)
+    crop_productivity_metrics.loc['Yield per kg CO2 emitted'] = productivity_metrics.loc['Total Yield (kg)'] / \
+                                                                productivity_metrics.loc['CO2 Emitted (kg CO2e)']
+    crop_productivity_metrics.loc['Yield per kg CO2 mitigated'] = productivity_metrics.loc['Total Yield (kg)'] / \
+                                                                  productivity_metrics.loc['CO2 Mitigated (kg CO2e)']
+    crop_productivity_metrics.loc['Yield per kg Net CO2e'] = productivity_metrics.loc['Total Yield (kg)'] / \
+                                                             productivity_metrics.loc['Net CO2 (kg CO2e)']
+    return crop_productivity_metrics
+
+
+def productivity_targets(crop_productivity_metrics, scenario):
+    normalised_area = crop_productivity_metrics.loc['Crop Productivity per Unit Area',
+                      :] / scenario.target_productivity_space
+    normalised_energy = crop_productivity_metrics.loc['Crop Productivity per Unit Energy',
+                        :] / scenario.target_productivity_energy
+    normalised_labour = crop_productivity_metrics.loc['Crop Productivity per Unit Labour',
+                        :] / scenario.target_productivity_labour
+    normalised_water = crop_productivity_metrics.loc['Crop Productivity per Unit Water',
+                       :] / scenario.target_productivity_water
+    normalised_nutrients = crop_productivity_metrics.loc['Crop Productivity per Unit Nutrients',
+                           :] / scenario.target_productivity_nutrients
+    normalised_growing_volume = crop_productivity_metrics.loc['Crop Productivity per Unit Growing Volume',
+                                :] / scenario.target_productivity_volume
+    normalised_plants = crop_productivity_metrics.loc['No. of Plants per unit area',
+                        :] / scenario.target_productivity_plants
+    normalised_net_co2 = crop_productivity_metrics.loc['Yield per kg Net CO2e',
+                         :] / scenario.target_productivity_CO2_net
+
+    normalised_productivity_targets = pd.DataFrame({
+        'metric': ['A', 'B'],
+        'Yield/Unit Area': [normalised_area[-1], 1],
+        'Yield/Unit Energy': [normalised_energy[-1], 1],
+        'Yield/Unit Labour': [normalised_labour[-1], 1],
+        'Yield/Unit Water': [normalised_water[-1], 1],
+        'Yield/Unit Nutrients': [normalised_nutrients[-1], 1],
+        'Yield/Unit Grow Volume': [normalised_growing_volume[-1], 1],
+        '# Plants/Unit Area': [normalised_plants[-1], 1],
+        'Yield/kg Net CO2e': [normalised_net_co2[-1], 1]
+    })
+
+    return normalised_productivity_targets
 
 
 scenario = get_scenario()
 ceo, headgrower, marketer, scientist, sales_person, manager, delivery, farmhand, admin, part_time = get_staff_list(scenario)
 end_date, timeseries_monthly, timeseries_yearly = get_calendar(scenario.start_date, years)
 gp = get_gp(scenario)
+staff_list = get_staff_list(scenario)
 capex_pilot, capex_full = calc_capex(scenario, gp)
 risk_counter = build_risk_assessment_counter(years)
 
@@ -1056,7 +1193,7 @@ byield_crop1, byield_crop2, byield_crop3, byield_crop4 = calc_best_yield(scenari
 light_factor, temp_factor, nutrient_factor, co2_factor = calc_adjustment_factors(scenario)
 ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4 = calc_adjusted_yield(byield_crop1, byield_crop2, byield_crop3, byield_crop4, light_factor, temp_factor, nutrient_factor, co2_factor)
 w1, w2, w3, w4 = calc_waste_adjusted_yield(ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4, years, scenario.grower_exp)
-crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants = calc_no_of_plants(scenario, w1, w2, w3, w4)
+crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants, total_no_of_plants = calc_no_of_plants(scenario, w1, w2, w3, w4)
 sales_crop1, sales_crop2, sales_crop3, sales_crop4, total_sales = calc_produce_sales(w1, w2, w3, w4, scenario)
 vadded_sales = calc_vadded_sales(scenario, years)
 education_rev = calc_education_rev(scenario, years)
@@ -1093,7 +1230,16 @@ investment_balance, payback_period = calc_payback_period(scenario, financial_ann
 
 financial_summary = build_financial_summary(financial_annual_overview, investment_balance, roi, timeseries_yearly)
 
-# Where shit gets risky
+# Productivity Metrics
+
+nutrient_consumption=np.random.randint(900,1100,size=(1,16))
+direct_labour=np.random.randint(2000,2200,size=(1,16))
+
+productivity_metrics = calc_productivity_metrics(timeseries_yearly, w1, w2, w3, w4, electricity_consumption, direct_labour, water_consumption, staff_list, nutrient_consumption, total_no_of_plants)
+crop_productivity_metrics = calc_crop_productivity_metrics(productivity_metrics, gp, scenario)
+productivity_targets = productivity_targets(crop_productivity_metrics, scenario)
+
+# Where it gets risky
 critical_risk, substantial_risk, moderate_risk = build_risk_curves(years)
 bankruptcy_definition = build_bankruptcy_definition(years)
 risk_dataframe = build_risk_dataframe(financial_annual_overview)
@@ -1105,6 +1251,8 @@ fig1, ax2 = plt.subplots()
 fig1, ax3 = plt.subplots()
 fig1, ax4 = plt.subplots()
 fig1, ax5 = plt.subplots()
+fig1, ax6 = plt.subplots()
+
 
 
 for s in range(simulations):
@@ -1188,6 +1336,44 @@ ax5.set_xlabel('Year')
 ax5.set_ylabel('Repairs (£)')
 ax5.set_title('Repair Costs')
 
+# RADAR CHART
+# number of variable
+categories = list(productivity_targets)[1:]
+N = len(categories)
+
+# We are going to plot the first line of the data frame.
+# But we need to repeat the first value to close the circular graph:
+values = productivity_targets.loc[0].drop('metric').values.flatten().tolist()
+values += values[:1]
+
+values2 = productivity_targets.loc[1].drop('metric').values.flatten().tolist()
+values2 += values2[:1]
+
+
+# What will be the angle of each axis in the plot? (we divide the plot / number of variable)
+angles = [n / float(N) * 2 * pi for n in range(N)]
+angles += angles[:1]
+
+# Initialise the spider plot
+ax6 = plt.subplot(111, polar=True)
+
+# Draw one axe per variable + add labels labels yet
+plt.xticks(angles[:-1], categories, color='grey', size=8)
+
+# Draw ylabels
+ax6.set_rlabel_position(0)
+plt.yticks([-1, 0.5, 0, 0.5, 1, 1.5], ["-1", "-0.5", "0", "0.5","1", "1.5"], color="grey", size=7)
+ax6.set_ylim(-1, 1.5)
+
+# Plot data
+ax6.plot(angles, values, linewidth=1, linestyle='solid', label='Crop Productivity')
+ax6.plot(angles, values2, linewidth=1, linestyle='solid', label='Target')
+
+
+# Fill area
+ax6.fill(angles, values, 'b', alpha=0.1)
+ax6.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=2)
+
 plt.show()
 
 print (scenario.start_date.strftime('The simulation computes from %d, %b, %Y'), end_date.strftime('until %d, %b, %Y'))      # format_str = "%B %d, %Y"')
@@ -1195,3 +1381,6 @@ print('The farm is growing Crop1: {}, Crop2 :{}, Crop3: {} and Crop 4:{}'.format
 print('Estimated capital expenditure for full-scale farm is: £{}'.format(capex_full))
 print(financial_annual_overview)
 print(payback_period)
+
+
+

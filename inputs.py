@@ -156,6 +156,18 @@ class Scenario(object):
         self.capex_facilities = None
         self.capex_building = None
 
+        self.target_productivity_space = None
+        self.target_productivity_energy = None
+        self.target_productivity_labour = None
+        self.target_productivity_water = None
+        self.target_productivity_nutrients = None
+        self.target_productivity_volume = None
+        self.target_productivity_plants = None
+        self.target_productivity_labour = None
+        self.target_productivity_CO2_emit = None
+        self.target_productivity_CO2_miti = None
+        self.target_productivity_CO2_net = None
+
 
     def __str__(self):
         """String representation"""
