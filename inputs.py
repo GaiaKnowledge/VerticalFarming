@@ -1,6 +1,7 @@
 
 class Scenario(object):
-    
+    """Scenario Class holds objects of a farm scenario which is the basis for model computations
+        """
     def __init__(self):
         # Location
         self.currency = None  # The type of currency
@@ -196,6 +197,20 @@ class Growthplan(object):
 
 
 class Staff(object):
+    """Staff Class holds objects as members of staff that have their corresponding attributes
+
+        Args:
+            job_role (str): The job title
+            name (str): The name of the employee
+            salary (int): The annual salary
+            count_pilot (float): The number of this type of job role on the pilot farm
+            count_pilot (float): The number of this type of job role on the full-scale farm
+            category (str) = category of work
+            wage (float) = hourly wage if applicable
+            hours (float) = expected hours of work
+            cost_pilot (float)= cost of this job role on the pilot farm
+            cost_full (float) = cost of this job role on the full-scale farm
+        """
 
     def __init__(self, name, job_role, salary, count_pilot, count_full, category, wage, hours):
 

@@ -40,7 +40,15 @@ Spectra_Blade_Single_Sided_J = Lights('Intravision Spectra Blade Single Sided - 
 
 # Input File
 def get_scenario():
+    """Get Scenario
+        Notes: Scenario is extracted from /Users/Francis/PycharmProjects/VerticalFarming/Current_Financial_Model.xlsx
+        This should be edited according to the file path and name of the saved excel model.
 
+    Returns:
+        scenario (object): The farm scenario that provided the basis of the analysis
+
+    To Do:
+    """
 
     input_filepath = '/Users/Francis/PycharmProjects/VerticalFarming/Current_Financial_Model.xlsx' # Make a copy and call spreadsheet this name
     inputs = pd.read_excel(input_filepath, index_col=0).to_dict()
@@ -210,6 +218,15 @@ def get_scenario():
     return scenario
 
 def export_results(financial_annual_overview, financial_summary, risk_dataframe):
+    """Export results function
+        Notes: Defines job roles and attributes
+
+     Args:
+         financial_annual_overview (dataframe): An annual financial overview of the analysis period
+         financial_summary (dataframe): A financial summary over the analysis period
+         risk_dataframe (dataframe):A annual financial overview of the analysis period with risk included
+     """
+
     with pd.ExcelWriter('/Users/Francis/PycharmProjects/VerticalFarming/results.xlsx') as writer:
         #financial_summary.to_excel(writer, "results.xlsx")
         financial_annual_overview.to_excel(writer, "results.xlsx")
@@ -218,6 +235,27 @@ def export_results(financial_annual_overview, financial_summary, risk_dataframe)
 
 # Staff List ( Edit this to fill in staff names)
 def get_staff_list(scenario):
+    """Get Staff List
+        Notes: Defines job roles and attributes
+
+     Args:
+         scenario (object): The farm scenario
+     Returns:
+         ceo (object): CEO attributes
+         headgrower (object): Head Grower attributes
+         marketer (object): Marketer attributes
+         scientist (object): Scientist attributes
+         sales_person (object): Sales person attributes
+         manager (object): Manager attributes
+         delivery (object): Delivery attributes
+         farmhand (object): Farm hand attributes
+         admin (object): Admin attributes
+         part_time (object): Part time attributes
+
+     To Do:
+     1. Add a staff list
+     """
+
     # Staff
     staff_list=[]
     ceo = Staff('unknown', 'CEO', scenario.ceo_msalary, scenario.ceo_count_y1, scenario.ceo_count_y2, 'indirect', 0, 0)
@@ -230,12 +268,21 @@ def get_staff_list(scenario):
     farmhand = Staff('unknown', 'Farm Hand', scenario.farmhand_msalary, scenario.farmhand_count_y1, scenario.farmhand_count_y2, 'direct', 0, 0)
     admin = Staff('unknown', 'Admin', scenario.admin_msalary, scenario.admin_count_y1, scenario.admin_count_y2, 'salary', 0, 0)
     part_time = Staff('unknown', 'Part-time Employee', scenario.parttime_wage, scenario.parttime_count_y1, scenario.parttime_count_y2, 'indirect', 8.72, 20)
-    staff_list.append
-
 
     return ceo, headgrower, marketer, scientist, sales_person, manager, delivery, farmhand, admin, part_time       # Edit
 # Date Time
 def get_calendar(start_date, years):
+    """Get Calendar Function
+
+    Args:
+        start_date (datetime): The date when the farm begins operations and the analysis starts
+        years (int): The number of years that the analysis will look at
+    Returns:
+        end_date (datetime): The end date of the analysis
+        timeseries_monthly (list of datetimes): A time series of monthly dates from start to end date
+        timeseries_yearly (list of datetimes): A time series of annual dates from start to end date
+    To Do:
+    """
     start_date_counter = start_date
     end_date = start_date + relativedelta(years=years)
     month_step = relativedelta(months=1)
@@ -257,6 +304,17 @@ def get_calendar(start_date, years):
     return end_date, timeseries_monthly, timeseries_yearly
 # Growth Plans
 def get_gp(scenario):
+    """Get Growth Plan
+
+    Args:
+        scenario (object): The farm scenario
+
+    Returns:
+        gp (object): The growth plan of the farm
+
+    To Do:
+    """
+
     gp = Growthplan()
     gp.upgrade_year = scenario.start_date + timedelta(days=days_in_year) # When scaling of pilot farm occurs
     gp.facility_size_full = scenario.facility_size_pilot * scenario.growing_area_mulitplier
@@ -271,10 +329,21 @@ def get_gp(scenario):
 
 # CAPEX
 def calc_capex(scenario, gp):
-    """"
-    PP. 51 of Plant Factory
-    Initial cost including necessary facilities (15 tiers, 50cm distance between tiers)
-    $4000 USD per sq-m x 0.8 for £
+
+    """Calculate CAPEX Costs Function
+        Note: PP. 51 of Plant Factory
+        Initial cost including necessary facilities (15 tiers, 50cm distance between tiers)
+        $4000 USD per sq-m x 0.8 for £
+
+    Args:
+        scenario (object): The farm scenario
+        gp (object): Growth plans of farm
+
+    Returns:
+        capex_pilot (float): The capital costs associated with building the pilot farm
+        capex_full (float): The capital costs associated with building the full-scale farm
+
+    To Do:
     """
 
     if scenario.capex_pilot == 0:
@@ -288,16 +357,37 @@ def calc_capex(scenario, gp):
 
 # Yields
 def calc_best_yield(scenario, crop_typ1, crop_typ2, crop_typ3, crop_typ4, years):
+    """Calculate Best Case Yield
+    Note:
+        Retrieves the best case yield for a given crop type by seeking the attribute that aligns with the system type
+
+    Args:
+        scenario (object): The farm scenario
+        crop_typ1 (object): Crop type 1 that is grown on the farm
+        crop_typ2 (object): Crop type 2 that is grown on the farm
+        crop_typ3 (object): Crop type 3 that is grown on the farm
+        crop_typ4 (object): Crop type 4 that is grown on the farm
+        years (int): The number of years the analysis looks at
+
+    Returns:
+        byield_crop1 (list): The best case yield for crop type 1 as a time series
+        byield_crop2 (list): The best case yield for crop type 2 as a time series
+        byield_crop3 (list): The best case yield for crop type 3 as a time series
+        byield_crop4 (list): The best case yield for crop type 4 as a time series
+
+    To Do:
+        1. Max yield needs to be made dependant on system selection scenario.crop1_system and corresponding attribute of object
+        2. Crop type as on object is an input. Ideally crop_typ1 should be mapped onto scenario.crop_typ1 which is currently a string rather than an object.
+    """
+
     byield_crop1 = [0]
     byield_crop2 = [0]
     byield_crop3 = [0]
     byield_crop4 = [0]
-    ''' Max yield needs to be made dependant on system selection scenario.crop1_system and corresponding attirbute of object'''
     max_yield_crop1 = crop_typ1.drip_tower
     max_yield_crop2 = crop_typ2.drip_tower
     max_yield_crop3 = crop_typ3.drip_tower
     max_yield_crop4 = crop_typ4.drip_tower
-
 
     for y in range(1, years+1):
         if y == 1:  # under upgrade year check gp.upgrade_year
@@ -312,7 +402,27 @@ def calc_best_yield(scenario, crop_typ1, crop_typ2, crop_typ3, crop_typ4, years)
             byield_crop4.append(max_yield_crop4 * gp.stacked_growing_area_full * scenario.crop4_percent)
 
     return byield_crop1, byield_crop2, byield_crop3, byield_crop4
+
 def calc_adjustment_factors(scenario):
+    """Calculate Adjustment Factors
+    Note:
+        Adjustment factors are retrieved from DataFrame called Factor table. This a general way to computing reductions
+        but this should be improved to consider how growth environment matches the specific crop requirements.
+
+    Args:
+        scenario (object): The farm scenario
+
+    Returns:
+        light_factor (int): The multiplier of reduction due to matching of light requirements to crops
+        temp_factor (int): The multiplier of reduction due to matching of temperature requirements to crops
+        nutrient_factor (int): The multiplier of reduction due to matching of nutrients requirements to crops
+        co2_factor (int): The multiplier of reduction due to matching of co2 requirements to crops
+
+    To Do:
+        Currently the factors are generalised to the entire farm as opposed to comparing
+        This should be adjusted according to ratios of requirements to grow environment
+    """
+
     # Yield adjustment factors
     factor_table =  pd.DataFrame({'High': [1, 1, 1, 1, 'n/a'],
                                   'Medium': [0.9, 0.9, 0.9, 0.97, 'n/a'],
@@ -326,13 +436,33 @@ def calc_adjustment_factors(scenario):
     nutrient_factor = factor_table.loc['Nutrient Control', scenario.nutrient_control]
     co2_factor = factor_table.loc['CO2 Enrichment', scenario.co2_enrichment]
     return light_factor, temp_factor, nutrient_factor, co2_factor
+
 def calc_adjusted_yield(byield_crop1, byield_crop2, byield_crop3, byield_crop4, light_factor, temp_factor, nutrient_factor, co2_factor):
     ayield_crop1 = np.array(byield_crop1, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor
     ayield_crop2 = np.array(byield_crop2, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor
     ayield_crop3 = np.array(byield_crop3, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor
     ayield_crop4 = np.array(byield_crop4, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor
     return ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4
-def calc_waste_adjusted_yield(ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4, years, grower_exp):
+
+def calc_waste_adjusted_yield(scenario, ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4, years):
+    """Calculate Waste Adjusted Yields Function
+
+    Args:
+        scenario (object): The farm scenario
+        ayield_crop1 (list): The adjusted yields for crop 1 as a time series for X no. of years).
+        ayield_crop2 (list): The adjusted yields for crop 2 as a time series for X no. of years).
+        ayield_crop3 (list): The adjusted yields for crop 3 as a time series for X no. of years).
+        ayield_crop4 (list): The adjusted yields for crop 4 as a time series for X no. of years).
+        years (int): The number of years the analysis will look at
+
+    Returns:
+        wyield_crop1 (list): Annual waste adjusted yield of crop 1 as a time series
+        wyield_crop2 (list): Annual waste adjusted yield of crop 2 as a time series
+        wyield_crop3 (list): Annual waste adjusted yield of crop 3 as a time series
+        wyield_crop4 (list): Annual waste adjusted yield of crop 4 as a time series
+
+    To Do:
+    """
 
     waste_rates = pd.DataFrame({'High': [0, 0.1254,	0.1129,	0.1016,	0.0934,	0.0860,	0.0791,	0.0728,	0.0684,	0.0643,	0.0604,	0.0568,	0.0534,	0.0502,	0.0472,	0.0444, 0.0444, 0.0444, 0.0444, 0.0444, 0.0444],
                   'Medium': [0, 0.1777, 0.1599,	0.1439,	0.1324,	0.1218,	0.1121,	0.1031,	0.0969,	0.0911,	0.0856,	0.0805,	0.0757,	0.0711,	0.0668,	0.0628,	0.0628,	0.0628,	0.0628,	0.0628,	0.0628],
@@ -345,13 +475,31 @@ def calc_waste_adjusted_yield(ayield_crop1, ayield_crop2, ayield_crop3, ayield_c
     wyield_crop3 =[]
     wyield_crop4 =[]
     for y in range(0, years+1):
-        wyield_crop1.append(ayield_crop1[y]*(1-waste_rates.loc[y,grower_exp]))
-        wyield_crop2.append(ayield_crop2[y]*(1-waste_rates.loc[y,grower_exp]))
-        wyield_crop3.append(ayield_crop3[y]*(1-waste_rates.loc[y,grower_exp]))
-        wyield_crop4.append(ayield_crop4[y]*(1-waste_rates.loc[y,grower_exp]))
+        wyield_crop1.append(ayield_crop1[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
+        wyield_crop2.append(ayield_crop2[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
+        wyield_crop3.append(ayield_crop3[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
+        wyield_crop4.append(ayield_crop4[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
     return wyield_crop1, wyield_crop2, wyield_crop3, wyield_crop4
 
 def calc_no_of_plants(scenario, w1, w2, w3, w4):
+    """Calculate No. of Plants Function
+
+    Args:
+        scenario (object): The farm scenario
+        w1 (list): The waste-adjusted yields for crop 1 as a time series for X no. of years).
+        w2 (list): The waste-adjusted yields for crop 2 as a time series for X no. of years).
+        w3 (list): The waste-adjusted yields for crop 3 as a time series for X no. of years).
+        w4 (list): The waste-adjusted yields for crop 4 as a time series for X no. of years).
+
+    Returns:
+        crop1_no_of_plants (list): Annual no. of crop 1 as a time series
+        crop1_no_of_plants (list): Annual no. of crop 2 as a time series
+        crop1_no_of_plants (list): Annual no. of crop 3 as a time series
+        crop1_no_of_plants (list): Annual no. of crop 4 as a time series
+        total_no_of_plants (list): Total annual no. of plants as a time series
+
+    To Do:
+    """
     crop1_no_plants = [i / scenario.crop1_harvest_weight for i in w1]
     crop2_no_plants = [i / scenario.crop2_harvest_weight for i in w2]
     crop3_no_plants = [i / scenario.crop3_harvest_weight for i in w3]
@@ -363,6 +511,24 @@ def calc_no_of_plants(scenario, w1, w2, w3, w4):
 # Revenue
 
 def calc_produce_sales(w1, w2, w3, w4, scenario):
+    """Calculate Product Sales Revenue Function
+
+    Args:
+       w1 (list): The waste-adjusted yields for crop 1 as a time series for X no. of years).
+       w2 (list): The waste-adjusted yields for crop 2 as a time series for X no. of years).
+       w3 (list): The waste-adjusted yields for crop 3 as a time series for X no. of years).
+       w4 (list): The waste-adjusted yields for crop 4 as a time series for X no. of years).
+       scenario (object): The farm scenario
+
+    Returns:
+        sales_crop1 (list): Annual sales of crop 1 as a time series
+        sales_crop2 (list): Annual sales of crop 2 as a time series
+        sales_crop3 (list): Annual sales of crop 3 as a time series
+        sales_crop4 (list): Annual sales of crop 4 as a time series
+        total_sales (list): Total annual sales as a time series
+
+    To Do:
+    """
     sales_crop1 = []
     sales_crop2 = []
     sales_crop3 = []
@@ -378,6 +544,21 @@ def calc_produce_sales(w1, w2, w3, w4, scenario):
 
     return sales_crop1, sales_crop2, sales_crop3, sales_crop4, total_sales
 def calc_vadded_sales(scenario, years):
+    """Calculate Value Added Revenue Function
+
+    Args:
+       scenario (object): The farm scenario
+       years (int): The number of years the analysis will look at
+
+
+    Returns:
+        vadded_sales (list): Value Added Sales Revenue as a time series for each year
+
+    To Do:
+        Include associated costs as a rough estimation, should be accounted for in OpEx, however salaries are largest factor
+    """
+
+
     vadded_sales = [0]
     annual_vadded_sales = scenario.vadded_avg_revenue_y1*12
 
@@ -386,35 +567,95 @@ def calc_vadded_sales(scenario, years):
         annual_vadded_sales *= scenario.vadded_products_multiplier
 
     return vadded_sales
-def calc_education_rev(scenario, years):
-   education_rev = [0]
-   annual_education_rev = scenario.education_avg_revenue_y1*12
 
-   for y in range(1, years+1):
+def calc_education_rev(scenario, years):
+    """Calculate Education Revenue Function
+
+    Args:
+       scenario (object): The farm scenario
+       years (int): The number of years the analysis will look at
+
+
+    Returns:
+        education_rev (list): Tourism Revenue as a time series for each year
+
+    To Do:
+        Include randomness for education sales (frequency and amount) as a part of growth multiplier.
+        Include associated costs as a rough estimation, should be accounted for in OpEx, however salaries are largest factor
+    """
+    education_rev = [0]
+    annual_education_rev = scenario.education_avg_revenue_y1*12
+
+    for y in range(1, years+1):
         education_rev.append(annual_education_rev)
         annual_education_rev *= scenario.education_multiplier
 
-   return education_rev
-def calc_tourism_rev(scenario, years):
-   tourism_rev = [0]
-   annual_tourism_rev = scenario.tourism_avg_revenue_y1*12
+    return education_rev
 
-   for y in range(0, years):
+def calc_tourism_rev(scenario, years):
+    """Calculate Tourism Revenue Function
+
+    Args:
+       scenario (object): The farm scenario
+       years (int): The number of years the analysis will look at
+
+
+    Returns:
+        tourism_rev (list): Tourism Revenue as a time series for each year
+
+    To Do:
+        Include randomness for tourism (frequency and amount) as a part of growth multiplier.
+    """
+    tourism_rev = [0]
+    annual_tourism_rev = scenario.tourism_avg_revenue_y1*12
+
+    for y in range(0, years):
         tourism_rev.append(annual_tourism_rev)
         annual_tourism_rev *= scenario.tourism_multiplier
 
-   return tourism_rev
-def calc_hospitality_rev(scenario, years):
-   hospitality_rev = [0]
-   annual_hospitality = scenario.hospitality_avg_revenue_y1*12
+    return tourism_rev
 
-   for y in range(1, years+1):
+def calc_hospitality_rev(scenario, years):
+    """Calculate Hospitality Revenue Function
+
+    Args:
+       scenario (object): The farm scenario
+       years (int): The number of years the analysis will look at
+
+
+    Returns:
+        hospitality_revenue (list): Hospitality Revenue as a time series for each year
+
+    To Do:
+        Include randomness for hospitality as part of growth multiplier (frequency and amount).
+    """
+
+    hospitality_rev = [0]
+    annual_hospitality = scenario.hospitality_avg_revenue_y1*12
+
+    for y in range(1, years+1):
         hospitality_rev.append(annual_hospitality)
         annual_hospitality *= scenario.hospitality_multiplier
 
-   return hospitality_rev
-# Grants - Adjust Chance
+    return hospitality_rev
+
+# Grants
 def calc_grants_rev(years):
+    """Calculate Grants Revenue Function
+
+    Args:
+       years (int): The number of years the analysis will look at
+       scenario (object): The farm scenario
+
+    Returns:
+        grants_rev (list): Grants Revenue as a time series for each year
+       #
+    To Do:
+        Incoporate a way to account for expenditure corresponding to a grant proposal. Perhaps a percentage?
+        Include randomness for grant award (frequency and amount).
+        Include crowdfunding
+        Create a donation based function, decide whether it becomes a new revenue stream or incoporated into existing stream
+    """
     grants_rev = [0]
 
     for y in range(1, years+1):
@@ -430,10 +671,32 @@ def calc_grants_rev(years):
 # COGS
 
 def calc_direct_labour(farmhand, delivery, part_time, years, months_in_a_year, scenario):
+    """Calculate Direct Labour costs Function
+
+    Args:
+       farmhand (object): The role of farm hand and its attributes
+       delivery (object): The role of delivery and its attributes
+       part_time (object): The role of part-time and its attributes
+       years (int): The number of years the analysis will look at
+       months_in_a_year (int): The number of months in a year
+       scenario (object): The farm scenario
+
+    Returns:
+        cogs_direct_labour (list): Cost of Goods Sold expenditure on Direct Labour as a time series for each year
+
+    To Do:
+        Labour efficiency improvement - Currently draws from a normal distribution for improvement of part-time hour reduction.
+        requires checking and refinement.
+        Hours estimation (list): Based on farm size, number of plants, etc. This will determine the amount of work needed to maintain the farm
+        as well as part-time hours/wages. This should be an output
+        Part-time hours  - Hours estimation will inform the amount of time required for part-time hours
+    """
 
     cogs_direct_labour = [0]
     labour_efficency_counter = 0
     mu, sigma = scenario.labour_improvement, 2
+
+    direct_labour = np.random.randint(2000, 2200, size=(1, 16))
 
     for y in range(1, years+1):
 
@@ -445,9 +708,21 @@ def calc_direct_labour(farmhand, delivery, part_time, years, months_in_a_year, s
         labour_efficency_counter += np.random.normal(mu, sigma)
         cogs_direct_labour.append(direct_labour_cost)
 
-    return cogs_direct_labour
+    return cogs_direct_labour, direct_labour
 
 def calc_growing_media(total_sales):
+    """Calculate Growing Media costs Function
+
+    Args:
+       total_sales (list): The total sales as a annual time series
+
+    Returns:
+        cogs_cogs_media (list): Cost of Goods Sold expenditure on Growing Media as a time series for each year
+
+    To Do:
+        Currently taken as an estimate as 2.5% of sales and should be improved to be dependant on growing media selected
+        Similar to packaging, should take into consideration economic order quantity
+    """
 
     percent_of_growing_media_to_sales = 0.025
     cogs_media = [i * percent_of_growing_media_to_sales for i in total_sales]
@@ -455,6 +730,26 @@ def calc_growing_media(total_sales):
     #scenario.growing_media * price_of_media * no_of_plants
     return cogs_media
 def calc_packaging(scenario, years, w1, w2, w3, w4):
+    """Calculate Packaging costs Function
+
+    Args:
+       scenario (object): The farm scenario
+       w1 (list): Time series of annual yields with waste_adjustment for crop 1
+       w2 (list): Time series of annual yields with waste_adjustment for crop 2
+       w3 (list): Time series of annual yields with waste_adjustment for crop 3
+       w4 (list): Time series of annual yields with waste_adjustment for crop 4
+       years (int): The no. of years the simulation will analyse
+
+
+    Returns:
+        cogs_packaging (list): Cost of Goods Sold expenditure on Packaging as a time series for each year
+
+    To Do:
+        Update packaging function to be more flexible and accurate
+        Update for all crops, not just crop 1, 2, 3, 4
+        Get costs from a table (perhaps taken from Excel spreadsheets) to take into economic order quantity
+        Include order quantity as an output
+    """
 
     cogs_packaging =[]
 
@@ -473,6 +768,27 @@ def calc_packaging(scenario, years, w1, w2, w3, w4):
     return cogs_packaging
 
 def calc_seeds_nutrients(crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants, crop1, crop2, crop3, crop4):
+    """Calculate Electricity costs Function
+
+    Args:
+       crop1_no_of_plants (list): The number of plants of Crop 1 as a timeseries for each year
+       crop2_no_of_plants (list): The number of plants of Crop 2 as a timeseries for each year
+       crop3_no_of_plants (list): The number of plants of Crop 3 as a timeseries for each year
+       crop4_no_of_plants (list): The number of plants of Crop 4 as a timeseries for each year
+       crop1 (object): Crop 1 selected
+       crop2 (object): Crop 2 selected
+       crop3 (object): Crop 3 selected
+       crop4 (object): Crop 4 selected
+
+    Returns:
+        cogs_seeds_nutrients (list): Cost of Goods Sold expenditure on Electricity as a time series for each year
+        nutrient_consumption (list): The amount of eletricity consumed each year
+
+    To Do:
+        Update nutrient consumption to be realistic and not a random number generator
+        Update seed costing algorithm
+    """
+
     cogs_seeds_crop1 = [i * crop1.seed_cost * (1/crop1.germination_rate) for i in crop1_no_of_plants]
     cogs_seeds_crop2 = [i * crop2.seed_cost * (1/crop2.germination_rate) for i in crop2_no_of_plants]
     cogs_seeds_crop3 = [i * crop3.seed_cost * (1/crop3.germination_rate) for i in crop3_no_of_plants]
@@ -480,16 +796,45 @@ def calc_seeds_nutrients(crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_pla
     cogs_seeds_nutrients = [sum(x) for x in zip(cogs_seeds_crop1, cogs_seeds_crop2, cogs_seeds_crop3, cogs_seeds_crop4)]
 
 # No nutrients YET
-
+    nutrient_consumption = np.random.randint(900, 1100, size=(1, 16))
     #cogs_seeds_nutrients = sum(x) for x in zip(total_seeds_cost, total_nutrients_cost)
 
-    return cogs_seeds_nutrients
+    return cogs_seeds_nutrients, nutrient_consumption
 
 
 def calc_avg_photoperiod(scenario, crop1, crop2, crop3, crop4):
+    """Calculate Average Photoperiod
+
+    Args:
+       scenario (object): The farm scenario
+       crop1 (object): Crop 1 selected
+       crop2 (object): Crop 2 selected
+       crop3 (object): Crop 3 selected
+       crop4 (object): Crop 4 selected
+
+    Returns:
+        avg_photoperiod (float): The average photoperiod of lights considering crop requirements and farm allocation
+    """
     avg_photoperiod = (scenario.crop1_percent * crop1.photoperiod) + (scenario.crop2_percent * crop2.photoperiod) + (scenario.crop3_percent * crop3.photoperiod)+ (scenario.crop4_percent * crop4.photoperiod)
     return avg_photoperiod
 def calc_electricity(scenario, gp, avg_photoperiod, light, days_in_year, years):
+    """Calculate Electricity costs Function
+
+    Args:
+       scenario (object): The farm scenario
+       gp (object): Growth plan for Farm
+       avg_photoperiod (float): Average photoperiod of lights considering crop requirements
+       light (object): The light selected by the user
+       days_in_year (float): The number of days in a year
+       years (int): The no. of years the simulation will analyse
+
+    Returns:
+        cogs_electricity (list): Cost of Goods Sold expenditure on Electricity as a time series for each year
+        electricity_consumption (list): The amount of eletricity consumed each year
+
+    To Do:
+        Add HVAC model and remove HVAC multiplier of 1.25 for enhanced accuracy... leave multiplier as a default?
+    """
 
     electricity_consumption =[0]
     HVAC_multiplier = 1.25
@@ -504,6 +849,17 @@ def calc_electricity(scenario, gp, avg_photoperiod, light, days_in_year, years):
     return cogs_electricity, electricity_consumption
 
 def calc_water(scenario, years, days_in_year):
+    """Calculate Water costs Function
+
+    Args:
+       scenario (object): The farm scenario
+       years (int): The no. of years the simulation will analyse
+       days_in_year (float): The number of days in a year
+
+    Returns:
+        cogs_water (list): Cost of Goods Sold expenditure on Water as a time series for each year
+        water_consumption (list): The amount of water consumed each year
+    """
     water_consumption = [0]
 
     for y in range(years+1):
@@ -519,6 +875,16 @@ def calc_water(scenario, years, days_in_year):
 # OPEX
 
 def calc_rent(scenario, years, month_in_a_year):
+    """Calculate Rent costs Function
+
+    Args:
+       scenario (object): The farm scenario
+       years (int): The no. of years the simulation will analyse
+       months_in_a_year (int): The number of months in a year
+
+    Returns:
+        opex_rent (list): Operational expenditure on other costs as a time series for each year
+    """
     opex_rent = [0]
     for y in range(years+1):
         if y == 1:
@@ -529,6 +895,22 @@ def calc_rent(scenario, years, month_in_a_year):
     return opex_rent
 
 def calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_person, years, months_in_a_year):
+    """Calculate Salaries costs Function
+
+    Args:
+       ceo (object): The role of ceo and its associated values
+       scientist (object): The role of scientist and its associated values
+       marketer (object): The role of marketer and its associated values
+       admin (object): The role of admin and its associated values
+       manager (object): The role of manager and its associated values
+       headgrower (object): The role of head grower and its associated values
+       sales_person (object): The role of sales person and its associated values
+       years (int): The no. of years the simulation will analyse
+       months_in_a_year (int)
+
+    Returns:
+        opex_salaries (list): Operational expenditure on salaries as a time series for each year
+    """
     opex_salaries = [0]
 
     for y in range(1, years+1):
@@ -549,6 +931,16 @@ def calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_pe
     return opex_salaries
 
 def calc_other_costs(scenario, opex_staff, years):
+    """Calculate Other costs Function
+
+    Args:
+       scenario (object): The farm scenario
+       opex_staff (list): The operational costs for salaries as a time series
+       years (int): The no. of years the simulation will analyse
+
+    Returns:
+        opex_other_costs (list): Operational expenditure on other costs as a time series for each year
+    """
     opex_other_costs = [0]
 
     for y in range(1, years+1):
@@ -558,6 +950,16 @@ def calc_other_costs(scenario, opex_staff, years):
     return opex_other_costs
 
 def calc_insurance(scenario, years, months_in_a_year):
+    """Calculate Insurance costs Function
+
+    Args:
+       scenario (object): The farm scenario
+       years (int): The no. of years the simulation will analyse
+       months_in_a_year (int): The no. of months in a year
+
+    Returns:
+        opex_insurance (list): Operational expenditure on insurance as a time series for each year
+    """
     opex_insurance = [0]
     for y in range(years + 1):
         if y == 1:
@@ -569,6 +971,16 @@ def calc_insurance(scenario, years, months_in_a_year):
 
 
 def calc_distribution(scenario, years, months_in_a_year):
+    """Calculate Distribution costs Function
+
+    Args:
+       scenario (object): The farm scenario
+       years (int): The no. of years the simulation will analyse
+       months_in_a_year (int): The no. of months in a year
+
+    Returns:
+        opex_distribution (list): Operational expenditure on distribution as a time series for each year
+    """
 
     opex_distribution = [0]
     for y in range(years + 1):
@@ -583,6 +995,18 @@ def calc_distribution(scenario, years, months_in_a_year):
 # Loan
 
 def calc_loan_repayments(scenario, years):
+    """Calculate Loan Repayments and Loan Balance Function
+
+    Args:
+       scenario (object): The farm scenario
+       years (int): The no. of years the simulation will analyse
+
+    Returns:
+        loan_repayments (list): Loan repayments as a time series of repayments
+        loan_balance (list): Loan balance as a time series of loan balance remaining
+    """
+
+
     loan_balance = [scenario.loan_amount]
     loan_repayments = [0]
 
@@ -597,11 +1021,25 @@ def calc_loan_repayments(scenario, years):
         loan_balance.append(round(loan_balance[y-1]-loan_repayments[y]+(loan_balance[y-1]*scenario.loan_interest),2))
     return loan_repayments, loan_balance
 
-def calc_depreciation(scenario, lights, avg_photoperiod, days_in_year):
+def calc_depreciation(scenario, lights, avg_photoperiod, years, days_in_year):
 
-    """Construction - Depreciation 15 years for building. Typically accounts or 21 production costs
-    10 years for facilities
-    Lights - 5 years typically for LEDs but dependant for lifetime of LEDs
+    """Calculate Depreciation Function to Compute Total Farm Depreciation each Year
+       Typically accounts for 21 production costs
+
+    Args:
+       scenario (object): The farm scenario
+       lights (object): The lights used on the farm
+       avg_photoperiod (float): The average photoperiod of lights on the farm
+       years (int): The no. of years the simulation will analyse
+       days_in_year (float): The no. of days in the year
+
+    Returns:
+        depreciation (list): Depreciation as a timeseries of costs
+
+    Notes:
+    Construction - Depreciation over 15 years for building.
+    Facilities   - Depreciation over 10 years for facilities.
+    Lights - Depreciation over 5 years for LED (typically) but dependant for lifetime of LEDs
     """
 
     building_lifetime = 15
@@ -636,6 +1074,16 @@ def calc_depreciation(scenario, lights, avg_photoperiod, days_in_year):
     return depreciation
 
 def calc_roi(scenario, financial_annual_overview, years):
+    """Return on Investment Time Series Function
+
+    Args:
+       scenario (object): The farm scenario
+       financial_annual_overview (dataframe): The corresponding financial dataframe
+       years (int): No. of years the analysis will analyse
+
+    Returns:
+        roi (list): Return on investment time series for the no. of years
+    """
 
     roi = []
 
@@ -648,6 +1096,26 @@ def calc_roi(scenario, financial_annual_overview, years):
     return roi
 
 def calc_payback_period(scenario, financial_annual_overview, years):
+    """Calculating Payback Period for given Farm Scenario
+
+            Notes:
+                Computes the number of years to successfully pay off investment into the farm
+
+            Args:
+                scenario (object): Specified farm scenario
+                financial_annual_overview (dataframe): Annual financial overview of important data
+                years (int): Number of years for the analysis
+
+
+            Returns:
+                investment_balance (list): Timeseries of remaining investment balance
+                pay_back_period (int): The number of years to pay off the farm or print statement about profitability
+
+            TO DO:
+                Does the investment balance straddle zero? - P-box scenario must say what proportion of P-Box is
+                straddling zeros and which parameters are responsible for this.
+        """
+
     investment_balance = [scenario.capex_full]
     payback_period_list = []
 
@@ -669,6 +1137,21 @@ def calc_payback_period(scenario, financial_annual_overview, years):
 # Financial Dataframe Construction
 
 def build_dataframe(timeseries_yearly, timeseries_monthly):
+    """Constructing financial overview dataframe
+
+            Notes:
+                Creates dataframe with indices for annual and monthly finances
+
+            Args:
+                timeseries_yearly (list): Timeseries of annual dates
+                timeseries_monthly (list): Timeseries of monthly dates
+
+
+            Returns:
+                financial_annual_overview (dataframe): Annual financial overview of important data
+                financial_monthly_overview (dataframe): Annual financial overview of important data
+        """
+
     financial_annual_overview = pd.DataFrame(index= ['Yield Crop 1', 'Yield Crop 2', 'Yield Crop 3', 'Yield Crop 4',
                          'Revenue - Crop Sales', 'Revenue - Value-Added Products', 'Revenue - Education', 'Revenue - Tourism', 'Revenue - Hospitality', 'Revenue - Grants', 'Total Revenue',
                          'COGS - Direct Labour', 'COGS - Growing Media', 'COGS - Packaging', 'COGS - Seeds & Nutrients', 'COGS - Electricity', 'COGS - Water', 'Total COGS',                                  
@@ -687,7 +1170,25 @@ def build_dataframe(timeseries_yearly, timeseries_monthly):
                          'Loan Repayments', 'Loan Balance', 'Taxes', 'Depreciation',
                          'Net Profit', 'Return on Investment'] ,columns=timeseries_monthly)
     return financial_annual_overview, financial_monthly_overview
+
 def crop_and_revenue_to_df(financial_annual_overview, w1, w2, w3, w4, total_sales):
+    """Adding yields and sales information to financial overview
+
+            Notes:
+                Adds waste-adjusted yields for crops 1, 2, 3 and 4 with total sales to dataframe
+
+            Args:
+                financial_annual_overview (dataframe): An annual overview of financial data
+                w1 (list): Timeseries of expected yield for crop 4
+                w2 (list): Timeseries of expected yield for crop 4
+                w3 (list): Timeseries of expected yield for crop 4
+                w4 (list): Timeseries of expected yield for crop 4
+                total_sales (list): Timeseries of total sales
+
+            Returns:
+                financial_annual_overview (dataframe): Financial overview of important data
+        """
+
     financial_annual_overview.loc['Yield Crop 1'] = w1
     financial_annual_overview.loc['Yield Crop 2'] = w2
     financial_annual_overview.loc['Yield Crop 3'] = w3
@@ -704,6 +1205,23 @@ def crop_and_revenue_to_df(financial_annual_overview, w1, w2, w3, w4, total_sale
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
     return financial_annual_overview
 def cogs_to_df(financial_annual_overview, cogs_labour, cogs_media, cogs_packaging, cogs_seeds_nutrients, cogs_electricity, cogs_water):
+    """Adding Cost of Goods Sold to financial overview
+
+            Notes:
+                Adds direct labour, growing media, packaging, seeds, nutrients, electricity, water and total COGS to dataframe
+
+            Args:
+                financial_annual_overview (dataframe): An annual overview of financial data
+                cogs_labour (list): Timeseries of labour costs
+                cogs_media (list): Timeseries of media costs
+                cogs_packaging (list): Timeseries of packaging costs
+                cogs_seeds_nutrients (list): Timeseries of nutrient costs
+                cogs_electricity (list): Timeseries of electricity costs
+                cogs_water (list): Timeseries of water costs
+
+            Returns:
+                financial_annual_overview (dataframe): Financial overview of important data
+        """
 
     financial_annual_overview.loc['COGS - Direct Labour'] = cogs_labour
     financial_annual_overview.loc['COGS - Growing Media'] = cogs_media
@@ -716,6 +1234,23 @@ def cogs_to_df(financial_annual_overview, cogs_labour, cogs_media, cogs_packagin
                                                      financial_annual_overview.loc['COGS - Electricity'] + financial_annual_overview.loc['COGS - Water']
     return financial_annual_overview
 def opex_to_df(financial_annual_overview, opex_rent, opex_salaries, opex_other_costs, opex_insurance, opex_distribution):
+    """Adding operational expenditures to financial overview
+
+        Notes:
+            Adds rent, salaries, other costs, insurance, distribution and total OPEX to dataframe
+
+        Args:
+            financial_annual_overview (dataframe): An annual overview of financial data
+            opex_rent (list): Timeseries of rent costs
+            opex_salaries (list): Timeseries of salary costs
+            opex_other_costs (list): Timeseries of other costs calculated as a percentage of salaries
+            opex_insurance (list): Timeseries of insurance costs
+            opex_distribution (list): Time series of distribution costs
+
+        Returns:
+            financial_annual_overview (dataframe): Financial overview of important data
+    """
+
     financial_annual_overview.loc['OPEX - Rent'] = opex_rent
     financial_annual_overview.loc['OPEX - Staff (non-direct)'] = opex_salaries
     financial_annual_overview.loc['OPEX - Other Costs'] = opex_other_costs
@@ -726,6 +1261,22 @@ def opex_to_df(financial_annual_overview, opex_rent, opex_salaries, opex_other_c
                                                   + financial_annual_overview.loc['OPEX - Distribution']
     return financial_annual_overview
 def extra_to_df(financial_annual_overview, loan_repayments, loan_balance, scenario, depreciation):
+    """Adding calculations and final details to financial overview
+
+        Notes:
+            Adds loan repayments, loan balance, depreciation, gross profit, EBITDA, taxes and net profit to dataframe
+
+        Args:
+            financial_annual_overview (dataframe): An annual overview of financial data
+            loan_repayments (list): Timeseries of loan repayments
+            loan_balance (list): Timeseries of loan balance
+            scenario (object): Farm scenario
+            depreciation (list): Timeseries of depreciation costs
+
+        Returns:
+            financial_annual_overview (dataframe): Financial overview of important data
+    """
+
     financial_annual_overview.loc['Gross Profit'] = financial_annual_overview.loc['Total Revenue'] - financial_annual_overview.loc['Total COGS']
     financial_annual_overview.loc['EBITDA'] = financial_annual_overview.loc['Gross Profit'] - financial_annual_overview.loc['Total OPEX']
     financial_annual_overview.loc['Loan Repayments'] = loan_repayments
@@ -734,7 +1285,23 @@ def extra_to_df(financial_annual_overview, loan_repayments, loan_balance, scenar
     financial_annual_overview.loc['Depreciation'] = depreciation
     financial_annual_overview.loc['Net Profit'] = financial_annual_overview.loc['EBITDA'] - financial_annual_overview.loc['Loan Repayments'] - financial_annual_overview.loc['Taxes'] - financial_annual_overview.loc['Depreciation']
     return financial_annual_overview
+
 def build_financial_summary(financial_annual_overview, investment_balance, roi, timeseries_yearly):
+    """Build financial summary
+
+        Notes:
+            Summarises key data from financial_annual_overview
+
+        Args:
+            financial_annual_overview (dataframe): An annual summary of financial data
+            investment_balance (list): Timeseries of investment balance
+            roi (list): Timeseries of ROI generated through farm activities
+            timeseries_yearly (list): Timeseries of dates from start-date specified by user
+
+        Returns:
+            financial_summary (dataframe): Financial summary of important data
+    """
+
     financial_summary = pd.DataFrame(index= ['Gross Revenue', 'Cost of Goods Sold', 'Total Operating Expenses', 'EBITDA', 'Loan Repayments', 'Depreciation', 'Net Profit/Loss', 'Investment Left', 'Return on Investment'], columns=timeseries_yearly)
     financial_summary.loc['Gross Revenue'] = financial_annual_overview.loc['Total Revenue']
     financial_summary.loc['Cost of Goods Sold'] = financial_annual_overview.loc['Total COGS']
@@ -749,11 +1316,39 @@ def build_financial_summary(financial_annual_overview, investment_balance, roi, 
 
 # Financial Dataframe with Risk
 def build_risk_dataframe(financial_annual_overview):
+    """Build risk dataframe
+
+        Notes:
+            Copies financial_annual_overview
+        Args:
+            financial_annual_overview (dataframe): An annual overview of financial data
+
+        Returns:
+            risk_dataframe (dataframe): An instance of a annual overview of financial data with a simulation of risk
+    """
+
     risk_dataframe = financial_annual_overview.copy()
     return risk_dataframe
 
 # ROI Risk Assessment Curves
 def build_risk_curves(years):
+    """Creating lines/curves for risk thresholds on risk assessment graph for critical, moderate, substantial and safe zones
+
+        Notes:
+            Safe zone is categorised as under moderate risk
+        Args:
+            years (int): No. of years for analysis
+
+        Returns:
+            critical_risk (list):
+            moderate_risk (list):
+            substantial_risk (list):
+
+        TO DO:
+            Allow flexibility of risk threshold definitions which are currently fixed
+
+    """
+
     crit_def_prob = 0.50
     crit_def_years = 3
     sub_def_prob = 0.25
@@ -772,6 +1367,22 @@ def build_risk_curves(years):
 
     return critical_risk, substantial_risk, moderate_risk
 def build_bankruptcy_definition(years):
+    """Build a bankruptcy definition
+
+        Notes:
+            This function is set according to a line of best fit from Year 0 at -10% ROI to 10% ROI by Year 7.
+
+        Args:
+            years (int): No. of years for analysis
+
+        Returns:
+            Bankruptcy definition (list): A timeseries of the bankruptcy threshold graph
+
+        TO DO:
+        Allow flexibility of bankruptcy definition by allowing input of two data points rather than assuming (-10%, 0) and (10%, 7)
+
+    """
+
     bankruptcy_definition =[]
     for y in range(years+1):
         # Threshold for bankruptcy
@@ -786,11 +1397,36 @@ def build_bankruptcy_definition(years):
     return bankruptcy_definition
 
 def build_risk_assessment_counter(years):
+    """Build a risk counter
+
+        Args:
+            years (int): No. of years for analysis
+
+        Returns:
+            risk_counter (list): An empty list for keeping track of bankruptcy events
+    """
+
     risk_counter = []
     for y in range(years+1):
         risk_counter.append(0)
     return risk_counter
+
 def risk_assessment(roi, bankruptcy_definition, years, risk_counter):
+    """Risk Assessment of Bankruptcy Calculation
+
+        Args:
+            roi (list): The farm scenario
+            bankruptcy_definition (list): The threshold line of bankruptcy
+            years (int): No. of years for analysis
+            risk_counter (list): Waste-adjusted yield for crop 1
+            # Investment balance (list)
+
+        Returns:
+            risk_counter (list): A counter for each year that tallies up the number of times that the ROI falls under the bankruptcy threshold
+
+        TO DO:
+        Include investment balance < 0 as a necessary requisite for bankruptcy
+    """
 
     for y in range(years+1):
 
@@ -801,6 +1437,16 @@ def risk_assessment(roi, bankruptcy_definition, years, risk_counter):
 
     return risk_counter
 def risk_assessment_probability(risk_assessment_counter, years, simulations):
+    """Risk Assessment Probability of Bankruptcy out of X Simulations
+
+        Args:
+            risk_assessment_counter (list): The farm scenario
+            years (int): No. of years for analysis
+            simulations (int): The number of simulations for Montecarlo Analysis
+
+        Returns:
+            risk_assessment_probability (list): Timeseries of probabiltiy of simulations that go bankrupt
+    """
 
     risk_assessment_probability = risk_assessment_counter
 
@@ -811,7 +1457,23 @@ def risk_assessment_probability(risk_assessment_counter, years, simulations):
 
 # Risks
 def calc_pathogen_outbreak(scenario, years, w1, w2, w3, w4):
-        """Pathogen outbreak
+    """RISK: Pathogen outbreak on the farm
+
+        Args:
+            scenario (object): The farm scenario
+            years (int): No. of years for analysis
+            w1 (list): Waste-adjusted yield for crop 1
+            w2 (list): Waste-adjusted yield for crop 2
+            w3 (list): Waste-adjusted yield for crop 3
+            w4  (list): Waste-adjusted yield for crop 4
+
+        Returns:
+            w1_risk (list): Adjusted yield for crop 1 with pathogen risk
+            w2_risk (list): Adjusted yield for crop 2 with pathogen risk
+            w3_risk (list): Adjusted yield for crop 3 with pathogen risk
+            w4_risk (list): Adjusted yield for crop 4 with pathogen risk
+
+        Uncertainty Notes:
              Reduced yield for a given month
              Max: 100% reduced yield
              Minimum: 5%
@@ -819,87 +1481,108 @@ def calc_pathogen_outbreak(scenario, years, w1, w2, w3, w4):
              Std Dev: 4
              Frequency: 1x a year
              Cause: Low grower experience/low humditiy control increase risk of disease
-         """
+    """
 
-        if scenario.biosecurity_level == 'High':
-             p_outbreak = 0.05 # Probability of outbreak for a given year
-             p_no_outbreak = 0.95 # Probability of no outbreak for a given year
-             pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
-        elif scenario.biosecurity_level == 'Medium':
-             p_outbreak = 0.1 # Probability of outbreak for a given year
-             p_no_outbreak = 0.9 # Probability of no outbreak for a given year
-             pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+    if scenario.biosecurity_level == 'High':
+        p_outbreak = 0.05 # Probability of outbreak for a given year
+        p_no_outbreak = 0.95 # Probability of no outbreak for a given year
+        pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+    elif scenario.biosecurity_level == 'Medium':
+        p_outbreak = 0.1 # Probability of outbreak for a given year
+        p_no_outbreak = 0.9 # Probability of no outbreak for a given year
+        pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
 
-        elif scenario.biosecurity_level == 'Low' or scenario.climate_control == 'Low':
-             p_outbreak = 0.2 # Probability of outbreak for a given year
-             p_no_outbreak = 0.8 # Probability of no outbreak for a given year
-             pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+    elif scenario.biosecurity_level == 'Low' or scenario.climate_control == 'Low':
+        p_outbreak = 0.2 # Probability of outbreak for a given year
+        p_no_outbreak = 0.8 # Probability of no outbreak for a given year
+        pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
 
-        elif scenario.biosecurity_level == 'Low' and scenario.climate_control == 'Low':
-             p_outbreak = 0.25 # Probability of outbreak for a given year
-             p_no_outbreak = 0.75 # Probability of no outbreak for a given year
-             pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+    elif scenario.biosecurity_level == 'Low' and scenario.climate_control == 'Low':
+        p_outbreak = 0.25 # Probability of outbreak for a given year
+        p_no_outbreak = 0.75 # Probability of no outbreak for a given year
+        pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
 
-        pathogen_occurence = [0, *pathogen_occurence]
+    pathogen_occurence = [0, *pathogen_occurence]
 
-        pathogen_outbreak =[]
-        for y in range(years+1):
+    pathogen_outbreak =[]
 
-            if pathogen_occurence[y] == 1:
-                pathogen_outbreak.append(np.random.beta(8, 2))
-            else:
-                pathogen_outbreak.append(1)
+    for y in range(years+1):
 
-        w1_risk = [a * b for a, b in zip(w1, pathogen_outbreak)]
-        w2_risk = [a * b for a, b in zip(w2, pathogen_outbreak)]
-        w3_risk = [a * b for a, b in zip(w3, pathogen_outbreak)]
-        w4_risk = [a * b for a, b in zip(w4, pathogen_outbreak)]
+        if pathogen_occurence[y] == 1:
+            pathogen_outbreak.append(np.random.beta(8, 2))
+        else:
+            pathogen_outbreak.append(1)
 
-        return w1_risk, w2_risk, w3_risk, w4_risk
+    w1_risk = [a * b for a, b in zip(w1, pathogen_outbreak)]
+    w2_risk = [a * b for a, b in zip(w2, pathogen_outbreak)]
+    w3_risk = [a * b for a, b in zip(w3, pathogen_outbreak)]
+    w4_risk = [a * b for a, b in zip(w4, pathogen_outbreak)]
+
+    return w1_risk, w2_risk, w3_risk, w4_risk
 
 def calc_repairs(scenario, years):
-        """Repairs
-             After 12 months
-             Max: 20% of equipment
-             Minimum: 0.2% of equipment
-             AVG: 1%
-             Std Dev: 4
-             Frequency: 2x a year
-             Typical case: high automation, higher repair costs
-         """
-        if   scenario.automation_level == 'High':
-             p_small_repair = 0.65 # Probability of small repair for a given year
-             p_big_repair = 0.02 # Probability of a big repair for a given year
-             p_no_repair = 0.33 # Probability of no repair needed for a given year
-             repair_occurence = np.random.choice(3, years, p=[p_no_repair, p_small_repair, p_big_repair])
-        elif scenario.automation_level == 'Medium':
-             p_small_repair = 0.45  # Probability of small repair for a given year
-             p_big_repair = 0.01  # Probability of a big repair for a given year
-             p_no_repair = 0.54  # Probability of no repair needed for a given year
-             repair_occurence = np.random.choice(3, years, p=[p_no_repair, p_small_repair, p_big_repair])
-        elif scenario.automation_level == 'Low':
-             p_small_repair = 0.4  # Probability of small repair for a given year
-             p_big_repair = 0.002  # Probability of a big repair for a given year
-             p_no_repair = 0.598  # Probability of no repair needed for a given year
-             repair_occurence = np.random.choice(3, years, p=[p_no_repair, p_small_repair, p_big_repair])
+    """RISK: Repairs of equipment on the farm
 
-        repair_occurence = [0, 0, *repair_occurence]
+        Args:
+            scenario (object): The farm scenario
+            years (int): No. of years for analysis
 
-        repair = []
+        Returns:
+            repair (list): Repair costs taken as a percentage of capital costs for facilities and lighting
 
-        for y in range(years+1):
+        Uncertainty Notes:
+            After 12 months
+            Max: 20% of equipment
+            Minimum: 0.2% of equipment
+            AVG: 1%
+            Std Dev: 4
+            Frequency: 2x a year
+            Typical case: high automation, higher repair costs
+    """
 
-            if repair_occurence[y] == 1:
-                repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(0.5, 40))
-            elif repair_occurence == 2:
-                repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(1.5, 8))
-            else:
-                repair.append(0)
+    if   scenario.automation_level == 'High':
+        p_small_repair = 0.65 # Probability of small repair for a given year
+        p_big_repair = 0.02 # Probability of a big repair for a given year
+        p_no_repair = 0.33 # Probability of no repair needed for a given year
+        repair_occurence = np.random.choice(3, years, p=[p_no_repair, p_small_repair, p_big_repair])
+    elif scenario.automation_level == 'Medium':
+        p_small_repair = 0.45  # Probability of small repair for a given year
+        p_big_repair = 0.01  # Probability of a big repair for a given year
+        p_no_repair = 0.54  # Probability of no repair needed for a given year
+        repair_occurence = np.random.choice(3, years, p=[p_no_repair, p_small_repair, p_big_repair])
+    elif scenario.automation_level == 'Low':
+        p_small_repair = 0.4  # Probability of small repair for a given year
+        p_big_repair = 0.002  # Probability of a big repair for a given year
+        p_no_repair = 0.598  # Probability of no repair needed for a given year
+        repair_occurence = np.random.choice(3, years, p=[p_no_repair, p_small_repair, p_big_repair])
 
-        return repair
+    repair_occurence = [0, 0, *repair_occurence]
+
+    repair = []
+
+    for y in range(years+1):
+
+        if repair_occurence[y] == 1:
+            repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(0.5, 40))
+        elif repair_occurence == 2:
+            repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(1.5, 8))
+        else:
+            repair.append(0)
+
+    return repair
 #
 def calc_customer_withdrawal(scenario, years, total_sales):
-    """    Reduced Revenue
+    """RISK: Customer contract withdrawal (i.e. list individual customers or supermarket pulls order)
+
+        Args:
+            scenario (object): The farm scenario
+            years (int): No. of years for analysis
+            total_sales (list): Total sales for all crops every year
+
+        Returns:
+            customer_withdrawal (list): Customer withdrawals as a percentage of annual total sales to be deducted from total sales.
+
+        Uncertainty Notes:
            Max: 30% Revenue
            Min: 1% revenue
            AVG: 5%
@@ -907,6 +1590,7 @@ def calc_customer_withdrawal(scenario, years, total_sales):
            Frequency: 1x every 2 years
            Typical case: To retail business model
     """
+
     if  scenario.business_model == 'Wholesale':
         p_withdrawal = 0.05  # Probability of customer withdrawal for given year
         p_no_withdrawal = 0.95  # Probability of no withdrawal for given year
@@ -938,57 +1622,72 @@ def calc_customer_withdrawal(scenario, years, total_sales):
     return customer_withdrawal
 #
 def labour_challenges(scenario, years, total_sales, cogs_labour):
-        """Labour Challenges
-             High labour costs, reduced yield
-             Max: 5% more labour, reduced yield (1 month)
-             AVG: 15%
-             Std Dev: 5
-             Frequency: Continous after 6 months
-             Cause: Low automation, high no. of tiers"""
-        if scenario.automation_level == 'High':
-             p_sabotage = 0.01  # Probability of a labour mistake resulting in lost crop
-             p_extra_cost = 0.05  # Probability of underestimated labour costs
-             p_no_issue = 0.94  # Probability of no problem
-             labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
-        elif scenario.automation_level == 'Medium':
-             p_sabotage = 0.03  # Probability of a labour mistake resulting in lost crop
-             p_extra_cost = 0.07  # Probability of underestimated labour costs
-             p_no_issue = 0.9  # Probability of no problem
-             labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
-        elif scenario.automation_level == 'Low':
-             p_sabotage = 0.07  # Probability of a labour mistake resulting in lost crop
-             p_extra_cost = 0.15  # Probability of underestimated labour costs
-             p_no_issue = 0.78  # Probability of no problem
-             labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
+    """RISK: Calculating likelihood and impact of labour challenges
 
-        labour_challenge_occurence = [0, *labour_challenge_occurence]
+        Args:
+            scenario (object): The farm scenario
+            years (int): No. of years for analysis
+            total_sales (list): Total sales for all crops every year
+            cogs_labour (list) Total expenses for direct labour (cost of goods sold)
 
-        labour_damage = [0]
-        labour_extra_cost = [0]
+        Returns:
+            labour_damage (list): Damage to crops or equipment as a percentage of total sales through acciedents or sabotage
+            labour_labour_extra_cost (list): Increased cost due to underestimated labour costs (farmhands, delivery or part-time labour)
 
-        for y in range(years + 1):
-             if labour_challenge_occurence[y] == 0:
-                 labour_damage.append(0)
-                 labour_extra_cost.append(0)
-             elif labour_challenge_occurence == 1:
-                 labour_damage.append(total_sales * np.random.beta(0.5, 50))
-                 labour_extra_cost.append(0)
-             elif labour_challenge_occurence == 2:
-                 labour_damage.append(0)
-                 labour_extra_cost.append(cogs_labour * np.random.beta(10, 50))
+        Uncertainty Notes:
+        High labour costs, reduced yield
+        Max: 5% more labour, reduced yield (1 month)
+        AVG: 15%
+        Std Dev: 5
+        Frequency: Continous after 6 months
+        Cause: Low automation, high no. of tiers
+    """
 
-        return labour_damage, labour_extra_cost
+    if scenario.automation_level == 'High':
+        p_sabotage = 0.01  # Probability of a labour mistake resulting in lost crop
+        p_extra_cost = 0.05  # Probability of underestimated labour costs
+        p_no_issue = 0.94  # Probability of no problem
+        labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
+    elif scenario.automation_level == 'Medium':
+        p_sabotage = 0.03  # Probability of a labour mistake resulting in lost crop
+        p_extra_cost = 0.07  # Probability of underestimated labour costs
+        p_no_issue = 0.9  # Probability of no problem
+        labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
+    elif scenario.automation_level == 'Low':
+        p_sabotage = 0.07  # Probability of a labour mistake resulting in lost crop
+        p_extra_cost = 0.15  # Probability of underestimated labour costs
+        p_no_issue = 0.78  # Probability of no problem
+        labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
 
-def reduced_product_quality():
-#         """Reduced Product Quality
-#             reduced yield
-#             Max: 20% price reduction
-#             Minimum: 5%
-#             AVG: 15%
-#             Std Dev: 3
-#             Frequency: 2x a year
-#             Cause: First year, low grower experience, no climate control
-#         """
+    labour_challenge_occurence = [0, *labour_challenge_occurence]
+
+    labour_damage = []
+    labour_extra_cost = []
+
+    for y in range(years + 1):
+        if labour_challenge_occurence[y] == 0:
+            labour_damage.append(0)
+            labour_extra_cost.append(0)
+        elif labour_challenge_occurence[y] == 1:
+            labour_damage.append(total_sales[y] * np.random.beta(0.5, 50))
+            labour_extra_cost.append(0)
+        elif labour_challenge_occurence[y] == 2:
+            labour_damage.append(0)
+            labour_extra_cost.append(cogs_labour[y] * np.random.beta(10, 50))
+
+    return labour_damage, labour_extra_cost
+
+def reduced_product_quality(scenario):
+    """Reduced Product Quality
+        reduced yield
+        Max: 20% price reduction
+        Minimum: 5%
+        AVG: 15%
+        Std Dev: 3
+        Frequency: 2x a year
+        Cause: First year, low grower experience, no climate control
+    """
+
     return reduced_product_quality
 
 def pest_outbreak():
@@ -1059,26 +1758,45 @@ def improved_light_efficiency(scenario):
 # Productivity Metrics
 def calc_productivity_metrics(timeseries_yearly, w1, w2, w3, w4, electricity_consumption, direct_labour,
                               water_consumption, staff, nutrient_consumption, no_of_plants):
+
+    """Calculating Productivity Metrics for the Farm
+
+        Args:
+           timeseries_yearly (list): The farm scenario
+           w1 (list): The corresponding financial dataframe
+           w2 (list): No. of years the analysis will analyse
+           w3 (list)
+           w4 (list)
+           electricity_consumption (list)
+           direct_labour (list)
+           water_consumption (list)
+           staff (object)
+           nutrient_consumption (list)
+           no_of_plants (list)
+
+        Returns:
+            list: Return on investment time series for the no. of years
+
+        Notes:
+            Water
+            Information about water usage of conventional farming compared to hydroponic or vertical farming methods has been studied by Barbosa (2015).
+            Water usage depends on application method and crop. For lettuce conventionally grown, uses approximately 250 L/kg/year, whilst hydroponic methods use 20 L/kg/year. For 41,000kg yield per year, the usage is compared
+
+            Energy
+            Energy to CO2e https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2019
+            Conversion factor from kJ to kWh 0.000277778
+            conversion factor from kJ/h to kWh 0.00666667
+            Assumption of energy used from HVAC system in Vertical farm per year	1927.799564 kWh/year
+            Assumption of energy used for conventionally grown lettuce	1100        1100 kJ/kg/y
+            Assumption of energy used for hydroponic  greenhouse grown lettuce	90000 kJ/kg/y
+        """
+
     kg_of_CO2e_per_kwh = 0.283  # https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2019
     tonnes = 1000
     millions_of_litres = 1000000
     kg_of_co2e_per_million_litres = 344
     litres_per_kg_annual = 20
     conventional_water_multiplier = 0.1  # Typically hydroponics is uses 10% less water than conventional farming
-
-    """
-    # Water
-    Information about water usage of conventional farming compared to hydroponic or vertical farming methods has been studied by Barbosa (2015).
-    Water usage depends on application method and crop. For lettuce conventionally grown, uses approximately 250 L/kg/year, whilst hydroponic methods use 20 L/kg/year. For 41,000kg yield per year, the usage is compared
-
-    # Energy
-    Energy to CO2e https://www.gov.uk/government/publications/greenhouse-gas-reporting-conversion-factors-2019
-    Conversion factor from kJ to kWh 0.000277778
-    conversion factor from kJ/h to kWh 0.00666667
-    Assumption of energy used from HVAC system in Vertical farm per year	1927.799564 kWh/year
-    Assumption of energy used for conventionally grown lettuce	1100        1100 kJ/kg/y
-    Assumption of energy used for hydroponic  greenhouse grown lettuce	90000 kJ/kg/y
-    """
 
     productivity_metrics = pd.DataFrame(
         index=['Total Yield (kg)', 'Energy Consumption (kWh)', 'Direct Labour (man-hours)', 'Water Consumption (L)',
@@ -1112,6 +1830,17 @@ def calc_productivity_metrics(timeseries_yearly, w1, w2, w3, w4, electricity_con
 
 
 def calc_crop_productivity_metrics(productivity_metrics, gp, scenario):
+    """Calculating Crop Productivity Metrics for the Farm
+
+        Args:
+           productivity_metrics (dataframe): Productivity metrics
+           gp (object): The growth plan of the farm
+           scenario (object): The farm scenario
+
+        Returns:
+            dataframe: crop productivity metrics for space, labour, nutrients, no. of plants, and co2
+    """
+
     crop_productivity_metrics = productivity_metrics.copy()
     crop_productivity_metrics.rename(
         index={0: 'Crop Productivity per Unit Area', 1: 'Crop Productivity per Unit Energy',
@@ -1149,6 +1878,16 @@ def calc_crop_productivity_metrics(productivity_metrics, gp, scenario):
 
 
 def productivity_targets(crop_productivity_metrics, scenario):
+    """Calculating Crop Productivity Metrics Normalised accoridng to User Targets
+
+        Args:
+           crop_productivity_metrics (dataframe): Crop Productivity metrics
+           scenario (object): The farm scenario
+
+        Returns:
+            dataframe: Productivity metrics normalised to targets ready for radar chart plotting
+    """
+
     normalised_area = crop_productivity_metrics.loc['Crop Productivity per Unit Area',
                       :] / scenario.target_productivity_space
     normalised_energy = crop_productivity_metrics.loc['Crop Productivity per Unit Energy',
@@ -1192,7 +1931,7 @@ risk_counter = build_risk_assessment_counter(years)
 byield_crop1, byield_crop2, byield_crop3, byield_crop4 = calc_best_yield(scenario, lettuce_fu_mix, basil_lemon, basil_genovese, none, years)
 light_factor, temp_factor, nutrient_factor, co2_factor = calc_adjustment_factors(scenario)
 ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4 = calc_adjusted_yield(byield_crop1, byield_crop2, byield_crop3, byield_crop4, light_factor, temp_factor, nutrient_factor, co2_factor)
-w1, w2, w3, w4 = calc_waste_adjusted_yield(ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4, years, scenario.grower_exp)
+w1, w2, w3, w4 = calc_waste_adjusted_yield(scenario, ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4, years)
 crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants, total_no_of_plants = calc_no_of_plants(scenario, w1, w2, w3, w4)
 sales_crop1, sales_crop2, sales_crop3, sales_crop4, total_sales = calc_produce_sales(w1, w2, w3, w4, scenario)
 vadded_sales = calc_vadded_sales(scenario, years)
@@ -1201,10 +1940,10 @@ tourism_rev = calc_tourism_rev(scenario, years)
 hospitality_rev = calc_hospitality_rev(scenario, years)
 grants_rev = calc_grants_rev(years)
 
-cogs_labour = calc_direct_labour(farmhand, delivery, part_time, years, months_in_a_year, scenario)
+cogs_labour, direct_labour = calc_direct_labour(farmhand, delivery, part_time, years, months_in_a_year, scenario)
 cogs_media = calc_growing_media(total_sales)
 cogs_packaging = calc_packaging(scenario, years, w1, w2, w3, w4)
-cogs_seeds_nutrients = calc_seeds_nutrients(crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants, lettuce_fu_mix, basil_lemon, basil_genovese, none)
+cogs_seeds_nutrients, nutrient_consumption = calc_seeds_nutrients(crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants, lettuce_fu_mix, basil_lemon, basil_genovese, none)
 avg_photoperiod = calc_avg_photoperiod(scenario, lettuce_fu_mix, basil_lemon, basil_genovese, basil_genovese)
 cogs_electricity, electricity_consumption = calc_electricity(scenario, gp, avg_photoperiod, Spectra_Blade_Single_Sided_J, days_in_year, years)
 cogs_water, water_consumption = calc_water(scenario, years, days_in_year)
@@ -1216,7 +1955,7 @@ opex_insurance = calc_insurance(scenario, years, months_in_a_year)
 opex_distribution = calc_distribution(scenario, years, months_in_a_year)
  #
 loan_repayments, loan_balance = calc_loan_repayments(scenario, years)
-depreciation = calc_depreciation(scenario, Spectra_Blade_Single_Sided_J, avg_photoperiod, days_in_year)
+depreciation = calc_depreciation(scenario, Spectra_Blade_Single_Sided_J, avg_photoperiod, years, days_in_year)
 # Constructing Financial Overview Data Frame
 financial_annual_overview, financial_monthly_overview = build_dataframe(timeseries_yearly, timeseries_monthly)
 financial_annual_overview = crop_and_revenue_to_df(financial_annual_overview, w1, w2, w3, w4, total_sales)
@@ -1231,9 +1970,6 @@ investment_balance, payback_period = calc_payback_period(scenario, financial_ann
 financial_summary = build_financial_summary(financial_annual_overview, investment_balance, roi, timeseries_yearly)
 
 # Productivity Metrics
-
-nutrient_consumption=np.random.randint(900,1100,size=(1,16))
-direct_labour=np.random.randint(2000,2200,size=(1,16))
 
 productivity_metrics = calc_productivity_metrics(timeseries_yearly, w1, w2, w3, w4, electricity_consumption, direct_labour, water_consumption, staff_list, nutrient_consumption, total_no_of_plants)
 crop_productivity_metrics = calc_crop_productivity_metrics(productivity_metrics, gp, scenario)
@@ -1272,7 +2008,7 @@ for s in range(simulations):
 
      risk_dataframe = cogs_to_df(risk_dataframe, cogs_labour, cogs_media, cogs_packaging,
                                             cogs_seeds_nutrients, cogs_electricity, cogs_water)
-     #risk_dataframe.loc['COGS - Direct Labour'] += labour_extra_cost
+     risk_dataframe.loc['COGS - Direct Labour'] += labour_extra_cost
 
 
      risk_dataframe = opex_to_df(risk_dataframe, opex_rent, opex_salaries, opex_other_costs,
