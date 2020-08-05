@@ -13,13 +13,12 @@ import os
 from math import pi
 import math
 #import pba
-from vf_crops import CropParameters, basil_lemon, basil_genovese, lettuce_fu_mix, null_crop
+import vf_crops
 
 from openpyxl import Workbook
 
 days_in_year = 365.25
 months_in_a_year = 12
-simulations = 20
 
 # Input File
 def get_scenario():
@@ -79,7 +78,7 @@ def get_scenario():
 
     # for crop_type in ['lettuce_fu_mix', 'basil_lemon', 'basil_genovese']:
     for i in range(1,5):
-        crop_parameter = CropParameters()
+        crop_parameter = vf_crops.CropParameters()
         crop_parameter.type = inputs[f"crop_typ{i}"]
         crop_parameter.percent = inputs[f"crop{i}_percent"]
         crop_parameter.system = inputs[f"crop{i}_system"]
@@ -399,18 +398,7 @@ def calc_best_yield(scenario, growth_plan, years):
 
     crop_yields = []
     for crop_parameter in scenario.crop_parameters:
-        crop = None
-        if crop_parameter.type == 'Basil - Lemon':
-            crop = basil_lemon
-        elif crop_parameter.type == 'Lettuce (Farm Urban Mix)':
-            crop = basil_genovese
-        elif crop_parameter.type == 'None':
-            crop = lettuce_fu_mix
-        elif crop_parameter.type == 'Basil - Genovese':
-            crop = null_crop
-        else:
-            raise RuntimeError(f"Unknown crop: {crop_parameter.type}")
-
+        crop = vf_crops.get_crop(crop_parameter.type)
         current_crop_yield = [0]
         max_yield = crop.drip_tower
         for y in range(1, years+1):
@@ -494,44 +482,15 @@ def calc_waste_adjusted_yield(scenario, ayield_crop1, ayield_crop2, ayield_crop3
     wyield_crop2 =[]
     wyield_crop3 =[]
     wyield_crop4 =[]
-    for y in range(0, years+1):
+    for y in range(years+1):
         wyield_crop1.append(ayield_crop1[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
         wyield_crop2.append(ayield_crop2[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
         wyield_crop3.append(ayield_crop3[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
         wyield_crop4.append(ayield_crop4[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
+
     return wyield_crop1, wyield_crop2, wyield_crop3, wyield_crop4
 
-def calc_no_of_plants(scenario, w1, w2, w3, w4):
-    """Calculate No. of Plants Function
-
-    Args:
-        scenario (object): The farm scenario
-        w1 (list): The waste-adjusted yields for crop 1 as a time series for X no. of years).
-        w2 (list): The waste-adjusted yields for crop 2 as a time series for X no. of years).
-        w3 (list): The waste-adjusted yields for crop 3 as a time series for X no. of years).
-        w4 (list): The waste-adjusted yields for crop 4 as a time series for X no. of years).
-
-    Returns:
-        crop1_no_of_plants (list): Annual no. of crop 1 as a time series
-        crop1_no_of_plants (list): Annual no. of crop 2 as a time series
-        crop1_no_of_plants (list): Annual no. of crop 3 as a time series
-        crop1_no_of_plants (list): Annual no. of crop 4 as a time series
-        total_no_of_plants (list): Total annual no. of plants as a time series
-
-    To Do:
-    """
-    num_plants = []
-    for crop in scenario.crop_parameters:
-        this_num_plants = [i / crop.harvest_weight for i in w1]
-        num_plants.append(this_num_plants)
-
-    crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants = num_plants
-
-    total_no_of_plants = [a + b + c + d for a, b, c, d in zip(crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants)]
-
-    return crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants, total_no_of_plants
 # Revenue
-
 def calc_produce_sales(w1, w2, w3, w4, scenario):
     """Calculate Product Sales Revenue Function
 
@@ -552,10 +511,19 @@ def calc_produce_sales(w1, w2, w3, w4, scenario):
     To Do:
     """
     crop_sales = []
-    for crop in scenario.crop_parameters:
+    for i, crop in enumerate(scenario.crop_parameters):
         this_crop_sales = []
-        for x in range(0, len(w1)):
-            this_crop_sales.append((w1[x] * crop.price1 * crop.customer_percent / crop.product_weight) + (w1[x] * crop.price2 * (1-crop.customer_percent) / crop.product_weight))
+        # THIS IS A HORRIBLE HACK - w should be passed in as a list
+        if i == 0:
+            w = w1
+        elif i == 1:
+            w = w2
+        elif i == 2:
+            w = w3
+        elif i == 3:
+            w = w4
+        for x in range(len(w)):
+            this_crop_sales.append((w[x] * crop.price1 * crop.customer_percent / crop.product_weight) + (w[x] * crop.price2 * (1-crop.customer_percent) / crop.product_weight))
         crop_sales.append(this_crop_sales)
     sales_crop1, sales_crop2, sales_crop3, sales_crop4 = crop_sales
     total_sales = [a + b + c + d for a, b, c, d in zip(sales_crop1, sales_crop2, sales_crop3, sales_crop4)]
@@ -748,6 +716,7 @@ def calc_growing_media(total_sales):
 
     #scenario.growing_media * price_of_media * no_of_plants
     return cogs_media
+
 def calc_packaging(scenario, years, w1, w2, w3, w4):
     """Calculate Packaging costs Function
 
@@ -786,42 +755,42 @@ def calc_packaging(scenario, years, w1, w2, w3, w4):
 
     return cogs_packaging
 
-def calc_seeds_nutrients(crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants, crop1, crop2, crop3, crop4):
-    """Calculate Nutrients and Seeds costs Function
 
-    Args:
-       crop1_no_of_plants (list): The number of plants of Crop 1 as a timeseries for each year
-       crop2_no_of_plants (list): The number of plants of Crop 2 as a timeseries for each year
-       crop3_no_of_plants (list): The number of plants of Crop 3 as a timeseries for each year
-       crop4_no_of_plants (list): The number of plants of Crop 4 as a timeseries for each year
-       crop1 (object): Crop 1 selected
-       crop2 (object): Crop 2 selected
-       crop3 (object): Crop 3 selected
-       crop4 (object): Crop 4 selected
+def calc_nurients_and_num_plants(scenario, w1, w2, w3, w4):
+    num_plants = []
+    cogs_seeds = []
+    for i, crop_param in enumerate(scenario.crop_parameters):
+        # THIS IS A HORRIBLE HACK - w should be passed in as a list
+        if i == 0:
+            w = w1
+        elif i == 1:
+            w = w2
+        elif i == 2:
+            w = w3
+        elif i == 3:
+            w = w4
+        crop = vf_crops.get_crop(crop_param.type)
+        this_num_plants = [i / crop_param.harvest_weight for i in w]
+        this_cogs_seeds = [i * crop.seed_cost * (1.0/crop.germination_rate) for i in this_num_plants]
+        num_plants.append(this_num_plants)
+        cogs_seeds.append(this_cogs_seeds)
 
-    Returns:
-        cogs_seeds_nutrients (list): Cost of Goods Sold expenditure on Nutrients as a time series for each year
-        nutrient_consumption (list): The amount of Nutrient consumed each year
+    #crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants = num_plants
+    #total_no_of_plants = [a + b + c + d for a, b, c, d in zip(crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants)]
+    total_no_of_plants = [a + b + c + d for a, b, c, d in zip(*num_plants)]
 
-    To Do:
-        Update nutrient consumption to be realistic and not a random number generator
-        Update seed costing algorithm
-    """
-
-    cogs_seeds_crop1 = [i * crop1.seed_cost * (1/crop1.germination_rate) for i in crop1_no_of_plants]
-    cogs_seeds_crop2 = [i * crop2.seed_cost * (1/crop2.germination_rate) for i in crop2_no_of_plants]
-    cogs_seeds_crop3 = [i * crop3.seed_cost * (1/crop3.germination_rate) for i in crop3_no_of_plants]
-    cogs_seeds_crop4 = [i * crop4.seed_cost * (1/crop4.germination_rate) for i in crop4_no_of_plants]
-    cogs_seeds_nutrients = [sum(x) for x in zip(cogs_seeds_crop1, cogs_seeds_crop2, cogs_seeds_crop3, cogs_seeds_crop4)]
-
-# No nutrients YET
+    # cogs_seeds_crop1 = [i * crop1.seed_cost * (1/crop1.germination_rate) for i in crop1_no_of_plants]
+    # cogs_seeds_crop2 = [i * crop2.seed_cost * (1/crop2.germination_rate) for i in crop2_no_of_plants]
+    # cogs_seeds_crop3 = [i * crop3.seed_cost * (1/crop3.germination_rate) for i in crop3_no_of_plants]
+    # cogs_seeds_crop4 = [i * crop4.seed_cost * (1/crop4.germination_rate) for i in crop4_no_of_plants]
+    # cogs_seeds_nutrients = [sum(x) for x in zip(cogs_seeds_crop1, cogs_seeds_crop2, cogs_seeds_crop3, cogs_seeds_crop4)]
+    cogs_seeds_nutrients = [sum(x) for x in zip(*cogs_seeds)]
     nutrient_consumption = np.random.randint(900, 1100, size=(1, 16))
     #cogs_seeds_nutrients = sum(x) for x in zip(total_seeds_cost, total_nutrients_cost)
 
-    return cogs_seeds_nutrients, nutrient_consumption
+    return cogs_seeds_nutrients, nutrient_consumption, total_no_of_plants
 
-
-def calc_avg_photoperiod(scenario, crop1, crop2, crop3, crop4):
+def calc_avg_photoperiod(scenario):
     """Calculate Average Photoperiod
 
     Args:
@@ -834,8 +803,12 @@ def calc_avg_photoperiod(scenario, crop1, crop2, crop3, crop4):
     Returns:
         avg_photoperiod (float): The average photoperiod of lights considering crop requirements and farm allocation
     """
-    avg_photoperiod = (scenario.crop1_percent * crop1.photoperiod) + (scenario.crop2_percent * crop2.photoperiod) + (scenario.crop3_percent * crop3.photoperiod)+ (scenario.crop4_percent * crop4.photoperiod)
+    avg_photoperiod = 0.0
+    for crop_param in scenario.crop_parameters:
+        crop = vf_crops.get_crop(crop_param.type)
+        avg_photoperiod += crop_param.percent * crop.photoperiod
     return avg_photoperiod
+
 def calc_electricity(scenario, gp, avg_photoperiod, light, days_in_year, years):
     """Calculate Electricity costs Function
 
@@ -1626,7 +1599,6 @@ def calc_customer_withdrawal(scenario, years, total_sales):
     customer_withdrawal_occurrence = [0, *customer_withdrawal_occurrence]
 
     customer_withdrawal = []
-
     for y in range(years+1):
 
         if customer_withdrawal_occurrence[y] == 1 and scenario.business_model == 'Wholesale':

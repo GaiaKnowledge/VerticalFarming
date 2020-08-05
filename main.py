@@ -27,6 +27,7 @@ cwd = os.getcwd()  # Get the current working directory (cwd)
 files = os.listdir(cwd)  # Get all the files in that directory
 
 years = 15 # Time series length !!UP TO 20!!
+simulations = 20
 
 #Equipment
 Spectra_Blade_Single_Sided_J = Lights('Intravision Spectra Blade Single Sided - J', 'LED', 'Spectra J', 160,
@@ -54,7 +55,6 @@ byield_crop1, byield_crop2, byield_crop3, byield_crop4 = crop_yields
 light_factor, temp_factor, nutrient_factor, co2_factor = calc_adjustment_factors(scenario)
 ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4 = calc_adjusted_yield(byield_crop1, byield_crop2, byield_crop3, byield_crop4, light_factor, temp_factor, nutrient_factor, co2_factor)
 w1, w2, w3, w4 = calc_waste_adjusted_yield(scenario, ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4, years)
-crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants, total_no_of_plants = calc_no_of_plants(scenario, w1, w2, w3, w4)
 sales_crop1, sales_crop2, sales_crop3, sales_crop4, total_sales = calc_produce_sales(w1, w2, w3, w4, scenario)
 vadded_sales = calc_vadded_sales(scenario, years)
 education_rev = calc_education_rev(scenario, years)
@@ -65,8 +65,8 @@ grants_rev = calc_grants_rev(years)
 cogs_labour, direct_labour = calc_direct_labour(farmhand, delivery, part_time, years, months_in_a_year, scenario)
 cogs_media = calc_growing_media(total_sales)
 cogs_packaging = calc_packaging(scenario, years, w1, w2, w3, w4)
-cogs_seeds_nutrients, nutrient_consumption = calc_seeds_nutrients(crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants, lettuce_fu_mix, basil_lemon, basil_genovese, none)
-avg_photoperiod = calc_avg_photoperiod(scenario, lettuce_fu_mix, basil_lemon, basil_genovese, basil_genovese)
+cogs_seeds_nutrients, nutrient_consumption, total_no_of_plants = calc_nurients_and_num_plants(scenario, w1, w2, w3, w4)
+avg_photoperiod = calc_avg_photoperiod(scenario)
 cogs_electricity, electricity_consumption = calc_electricity(scenario, growth_plan, avg_photoperiod, Spectra_Blade_Single_Sided_J, days_in_year, years)
 cogs_water, water_consumption = calc_water(scenario, years, days_in_year)
 
