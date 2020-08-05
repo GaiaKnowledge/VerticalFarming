@@ -551,20 +551,17 @@ def calc_produce_sales(w1, w2, w3, w4, scenario):
 
     To Do:
     """
-    sales_crop1 = []
-    sales_crop2 = []
-    sales_crop3 = []
-    sales_crop4 = []
-
-    for x in range(0, len(w1)):
-        sales_crop1.append((w1[x] * scenario.crop1_price1 * scenario.crop1_customer_percent / scenario.crop1_product_weight) + (w1[x] * scenario.crop1_price2 * (1-scenario.crop1_customer_percent) / scenario.crop1_product_weight))
-        sales_crop2.append((w2[x] * scenario.crop2_price1 * scenario.crop2_customer_percent / scenario.crop2_product_weight) + (w2[x] * scenario.crop2_price2 * (1-scenario.crop2_customer_percent) / scenario.crop2_product_weight))
-        sales_crop3.append((w3[x] * scenario.crop3_price1 * scenario.crop3_customer_percent / scenario.crop3_product_weight) + (w3[x] * scenario.crop3_price2 * (1-scenario.crop3_customer_percent) / scenario.crop3_product_weight))
-        sales_crop4.append((w4[x] * scenario.crop4_price1 * scenario.crop4_customer_percent / scenario.crop4_product_weight) + (w4[x] * scenario.crop4_price2 * (1-scenario.crop4_customer_percent)/ scenario.crop4_product_weight))
-
+    crop_sales = []
+    for crop in scenario.crop_parameters:
+        this_crop_sales = []
+        for x in range(0, len(w1)):
+            this_crop_sales.append((w1[x] * crop.price1 * crop.customer_percent / crop.product_weight) + (w1[x] * crop.price2 * (1-crop.customer_percent) / crop.product_weight))
+        crop_sales.append(this_crop_sales)
+    sales_crop1, sales_crop2, sales_crop3, sales_crop4 = crop_sales
     total_sales = [a + b + c + d for a, b, c, d in zip(sales_crop1, sales_crop2, sales_crop3, sales_crop4)]
 
     return sales_crop1, sales_crop2, sales_crop3, sales_crop4, total_sales
+
 def calc_vadded_sales(scenario, years):
     """Calculate Value Added Revenue Function
 
@@ -777,7 +774,7 @@ def calc_packaging(scenario, years, w1, w2, w3, w4):
 
     for y in range(years+1):
         annual_packaging_cost = 0
-        annual_packaging_cost += (w1[y] / scenario.crop1_product_weight)
+        annual_packaging_cost += (w1[y] / scenario.crop_parameters[0].product_weight)
         # annual_packaging_cost += (w2[y]/scenario.crop2_product_weight)
         # annual_packaging_cost += (w3[y]/scenario.crop3_product_weight)
         # annual_packaging_cost += (w4[y]/scenario.crop4_product_weight)
