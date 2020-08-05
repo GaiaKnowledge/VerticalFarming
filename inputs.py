@@ -169,6 +169,10 @@ class Scenario(object):
         self.target_productivity_CO2_miti = None
         self.target_productivity_CO2_net = None
 
+        self.ipm = None
+        self.pest_detection = None
+        self.electrical_backup = None
+
 
     def __str__(self):
         """String representation"""

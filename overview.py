@@ -14,6 +14,8 @@ import random
 import matplotlib.pyplot as plt
 import os
 from math import pi
+import math
+import pba
 
 from openpyxl import Workbook
 
@@ -215,6 +217,10 @@ def get_scenario():
     scenario.target_productivity_CO2_miti = inputs['target_productivity_CO2_miti']
     scenario.target_productivity_CO2_net = inputs['target_productivity_CO2_net']
 
+    scenario.ipm = inputs['ipm']
+    scenario.pest_detection = inputs['pest_detection']
+    scenario.electrical_backup = inputs['electrical_backup']
+
     return scenario
 
 def export_results(financial_annual_overview, financial_summary, risk_dataframe):
@@ -354,6 +360,63 @@ def calc_capex(scenario, gp):
         capex_full = scenario.capex_full
 
     return capex_pilot, capex_full
+
+def calc_hvac_energy(scenario, days_in_year):
+    """Heating, Ventilation and Air Cooling (HVAC) Energy Calculator
+    Notes: Law of Thermodynamics: Change in Internal Energy = Heat added to the system - Work done by the system
+           Q=UxSAx(Tin-Tout) x Efficiency
+           To determine U-values refer to U-Value tableS: http://www.puravent.co.uk/Guide_Resources/AppendixA_UValues.pdf
+    Args:
+        scenario(objbect): The farm scenario
+        set_points
+
+    Returns:
+        hvac_energy(list): Annual energy usage to accomodate for HVAC energy requirements
+
+    """
+    conv_factor_kJph_to_kWh = 0.00666667
+    conv_factor_kJ_to_kWh = 0.000277778
+
+    typical_U_values = {
+        # Wall (outer)
+        '9" solid brick': 2.2,
+        '11" brick-block cavity - unfilled': 1.0,
+        '11" brick-block cavity- insulated': 0.6,
+        # Wall (interal)
+        'plaster, 4.5 inch brick, plaster' : 2.2,
+        'plaster, 4 inch heavyweight block, plaster': 2.5,
+        'plaster, 4 inch lightweight block, plaster': 1.2,
+        'plasterboard, 4 inch studding, plasterboard': 1.8,
+        # Floor (Ground)
+        'solid concrete': 0.8,
+        'suspended - timber': 0.7,
+        # Floors (Intermediate)
+        'Plasterboard / 8 inch joist space / T & g boards - heat flow up': 1.7,
+        'Plasterboard / 8 inch joist space / T & g boards - heat flow down': 1.4,
+        # Roof
+        'pitched with felt, 50mm insulation': 0.6,
+        'pitched with felt, 100mm insulation': 0.3,
+        'flat, 25mm insulation': 0.9,
+        'flat, 50mm insulation': 0.7,
+        # Windows
+        'wooden/uvpc frame, single glazed': 5.0,
+        'wooden/uvpc frame, double glazed': 2.9,
+        'wooden/uvpc frame, double glazed - 20mm gap, Low-E': 1.7,
+        'metal frame, single glazed': 5.8
+    }
+
+
+
+    q = 792.246 # Heat lost or gained due to outside temperature (kJ·h−1)
+    u = 0.5 # Overall heat transfer coefficient (kJ·h−1·m−2·°C−1)
+    sa = 406.28 # Surface area of greenhouse (m2)
+    Tin = 23.9 # Inside air set point temperature (°C)
+    Tout = 20 # Outside air temperature (°C)
+    efficiency = 0.75  # Efficency of the heating, and air cooling system
+
+    energy_consumption_from_HVAC = q * conv_factor_kJph_to_kWh * days_in_year
+
+
 
 # Yields
 def calc_best_yield(scenario, crop_typ1, crop_typ2, crop_typ3, crop_typ4, years):
@@ -768,7 +831,7 @@ def calc_packaging(scenario, years, w1, w2, w3, w4):
     return cogs_packaging
 
 def calc_seeds_nutrients(crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_plants, crop4_no_of_plants, crop1, crop2, crop3, crop4):
-    """Calculate Electricity costs Function
+    """Calculate Nutrients and Seeds costs Function
 
     Args:
        crop1_no_of_plants (list): The number of plants of Crop 1 as a timeseries for each year
@@ -781,8 +844,8 @@ def calc_seeds_nutrients(crop1_no_of_plants, crop2_no_of_plants, crop3_no_of_pla
        crop4 (object): Crop 4 selected
 
     Returns:
-        cogs_seeds_nutrients (list): Cost of Goods Sold expenditure on Electricity as a time series for each year
-        nutrient_consumption (list): The amount of eletricity consumed each year
+        cogs_seeds_nutrients (list): Cost of Goods Sold expenditure on Nutrients as a time series for each year
+        nutrient_consumption (list): The amount of Nutrient consumed each year
 
     To Do:
         Update nutrient consumption to be realistic and not a random number generator
@@ -1071,7 +1134,7 @@ def calc_depreciation(scenario, lights, avg_photoperiod, years, days_in_year):
         elif y > 1:
             depreciation.append(lights_depreciation + facilities_depreciation + building_depreciation)
 
-    return depreciation
+    return depreciation, life_span
 
 def calc_roi(scenario, financial_annual_overview, years):
     """Return on Investment Time Series Function
@@ -1690,18 +1753,76 @@ def reduced_product_quality(scenario):
 
     return reduced_product_quality
 
-def pest_outbreak():
-#         """Pest Outbreak
-#             reduced yield
-#             Max: 100% reduced yield/month
-#             Minimum: 0
-#             AVG: 10%
-#             Std Dev: 4
-#             Frequency: 1x a year
-#             Cause: Poor insulation, no IPM, low humidity control
-#         """
-#         if
-    return pest_outbreak
+def calc_pest_outbreak(scenario, years, w1, w2, w3, w4):
+    """RISK: Pest outbreak on the farm
+
+        Args:
+            scenario (object): The farm scenario
+            years (int): No. of years for analysis
+            w1 (list): Waste-adjusted yield for crop 1
+            w2 (list): Waste-adjusted yield for crop 2
+            w3 (list): Waste-adjusted yield for crop 3
+            w4  (list): Waste-adjusted yield for crop 4
+
+        Returns:
+            w1_risk (list): Adjusted yield for crop 1 with pathogen risk
+            w2_risk (list): Adjusted yield for crop 2 with pathogen risk
+            w3_risk (list): Adjusted yield for crop 3 with pathogen risk
+            w4_risk (list): Adjusted yield for crop 4 with pathogen risk
+
+        Notes:
+            Pest Outbreak
+            reduced yield
+            Max: 100% reduced yield/month
+            Minimum: 0
+            AVG: 10%
+            Std Dev: 4
+            Frequency: 1x a year
+            Cause: Poor insulation, no IPM, low humidity control
+            Preventitive: High insulation, high humditity control, IPM, Pest detection technology
+        """
+
+    if scenario.climate_control == 'High' and scenario.insulation_level == 'High' and scenario.pest_detection == 'Yes':
+        p_outbreak = 0.005 # Probability of pest outbreak for a given year
+        p_no_outbreak = 0.995 # Probability of no pest outbreak for a given year
+        pest_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+    elif scenario.climate_control == 'High' and scenario.insulation_level == 'High' and scenario.pest_detection == 'No':
+        p_outbreak = 0.05 # Probability of pest outbreak for a given year
+        p_no_outbreak = 0.95 # Probability of no pest outbreak for a given year
+        pest_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+    elif scenario.climate_control == 'Medium' or scenario.insulation_level == 'Medium' or scenario.pest_detection == 'No':
+        p_outbreak = 0.2 # Probability of pest outbreak for a given year
+        p_no_outbreak = 0.8 # Probability of no pest outbreak for a given year
+        pest_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+    elif scenario.climate_control == 'Low' or scenario.insulation_level == 'Low' and scenario.pest_detection == 'No':
+        p_outbreak = 0.35 # Probability of pest outbreak for a given year
+        p_no_outbreak = 0.65 # Probability of no pest outbreak for a given year
+        pest_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+    elif scenario.climate_control == 'Low' and scenario.insulation_level == 'Low' and scenario.pest_detection == 'No' :
+        p_outbreak = 0.4 # Probability of pest outbreak for a given year
+        p_no_outbreak = 0.6 # Probability of no pest outbreak for a given year
+        pest_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+
+    pest_occurence = [0, *pest_occurence]
+
+    pest_outbreak =[]
+
+    for y in range(years+1):
+
+        if pest_occurence[y] == 1:
+            if scenario.ipm == 'No':
+                pest_outbreak.append(np.random.beta(60, 0.5))
+            elif scenario.ipm == 'Yes':
+                pest_outbreak.append(np.random.beta(120, 0.3))
+        else:
+            pest_outbreak.append(1)
+
+    w1_risk = [a * b for a, b in zip(w1, pest_outbreak)]
+    w2_risk = [a * b for a, b in zip(w2, pest_outbreak)]
+    w3_risk = [a * b for a, b in zip(w3, pest_outbreak)]
+    w4_risk = [a * b for a, b in zip(w4, pest_outbreak)]
+
+    return w1_risk, w2_risk, w3_risk, w4_risk
 
 def competitors_risk():
 #         """Competitor
@@ -1715,20 +1836,97 @@ def competitors_risk():
 #         """
     return competitors_risk
 
-def electrical_blackout():
-#         """Competitor
-#             reduced yield
-#             Max: 100% reduced yield
-#             Minimum: 0
-#             AVG: 75%
-#             Std Dev: 2
-#             Frequency: Low
-#             Cause: Aeroponics  without back-up system
-#         """
-    return electrical_blackout
+def calc_power_outage(scenario, years, w1, w2, w3, w4):
+    """RISK: Power Outage
+    Notes: A power outage can be caused by:
+     - excessive wind generation
+     - power line fault
+     - a brownout: a drop in voltage in electrical power supply
+     = a blackout: total loss of power to an area
+     - Electrics tripped due to circuit overloads, short circuits or ground fault surgers
+    - Witihout back-up protection an aeroponic system would be at high-risk of losing an entire farm's crops
+    Damage: 1 month's yield lost
+    Cause: Aeroponic system without back-up
+
+    Args:
+        scenario (object): The farm scenario
+        years (int): No. of years for analysis
+        w1 (list): Waste-adjusted yield for crop 1
+        w2 (list): Waste-adjusted yield for crop 2
+        w3 (list): Waste-adjusted yield for crop 3
+        w4  (list): Waste-adjusted yield for crop 4
+
+    Returns:
+        w1_risk (list): Adjusted yield for crop 1 with pathogen risk
+        w2_risk (list): Adjusted yield for crop 2 with pathogen risk
+        w3_risk (list): Adjusted yield for crop 3 with pathogen risk
+        w4_risk (list): Adjusted yield for crop 4 with pathogen risk
+    """
+
+    months_harvest = 1/12
+
+    p_outage = 0.05  # Probability of one power outage for a given year
+    p_two_outage = 0.01  # Probability of two power outages for a given year
+    p_no_outage = 0.94  # Probability of no power outage for a given year
+    power_outage = np.random.choice(3, years, p=[p_no_outage, p_outage, p_two_outage])
+
+    power_outage = [x * months_harvest for x in power_outage]
+
+    if scenario.electrical_backup == 'No':
+
+        if scenario.crop1_system == 'Aeroponics':
+            w1_risk = [a * b for a, b in zip(w1, power_outage)]
+        else:
+            w1_risk = w1
+
+        if scenario.crop2_system == 'Aeroponics':
+            w2_risk = [a * b for a, b in zip(w2, power_outage)]
+        else:
+            w2_risk = w2
+
+        if scenario.crop3_system == 'Aeroponics':
+            w3_risk = [a * b for a, b in zip(w3, power_outage)]
+        else:
+            w3_risk = w3
+
+        if scenario.crop4_system == 'Aeroponics':
+            w4_risk = [a * b for a, b in zip(w4, power_outage)]
+        else:
+            w4_risk = w4
+
+    else:
+        w1_risk = w1
+        w2_risk = w2
+        w3_risk = w3
+        w4_risk = w4
+
+    return w1_risk, w2_risk, w3_risk, w4_risk
+
+def calc_planning_delay(risk_dataframe, timeseries_yearly, years):
+    """RISK: Calculate Planning Delay
+        A planning delay results in scaling up from pilot to full-scale farm is delayed by X years
+
+    args:
+        risk_dataframe (dataframe): The financial annual overview including risk
+        annual_timeseries (list): List of dates for simulation
+        years (int): Number of years that the analysis runs for
+
+    return:
+        risk_dataframe (dataframe): updated risk dataframe
+    """
+
+    p_delay = 0.15  # Probability of planning permission delay by one year
+    p_no_delay = 0.85  # Probability of no planning permission delay
+    delay_occurence = np.random.choice(2, 1, p=[p_no_delay, p_delay])
+
+    if delay_occurence == 1:
+        risk_dataframe = risk_dataframe.drop(columns=timeseries_yearly[2])
+        risk_dataframe.insert(loc=2, column=timeseries_yearly[2], value=risk_dataframe.iloc[:,1], allow_duplicates = False)
+
+    return risk_dataframe
 
 # Opportunities
-#
+
 def improved_labour_efficiency():
 #         """Improved labour efficency
 #             Reduction in hours
@@ -1740,19 +1938,67 @@ def improved_labour_efficiency():
 #             Cause: further capex introduction of automation and manufacturing principles
 #         """
     return labour_efficiency
-#
-#
-def improved_light_efficiency(scenario):
-        """Improved light efficiency
-            Reduced wattage per hour of lighting systems
-            Max: 50% reduction in COGS - direct labour
-            Minimum: 10
-            AVG: 30% # 30% efficiency improvement
-            Std Dev: 3
-            Frequency: After LEDs depreciate
-            Cause: After LEDs depreciated update better lights
-        """
-        return improved_light_efficiency
+
+
+def calc_improved_light_efficiency(scenario, gp, avg_photoperiod, lights, life_span, electricity_consumption, days_in_year):
+    """Opportunity: Light Efficiency Improvement when Lights depreciated and replaced
+
+    Notes:
+        Haitz' Law
+        Every decade, the cost per lumen falls by a factor of 10,
+        and the amount of light generated per LED package increases by a factor of 20
+        Diode efficiency increases
+        Water cooling technologies to decrease heat output
+
+    Args:
+        scenario (object): The farm scenario
+        gp (object): The growth plan of the farm
+        avg_photoperiod (float): average photoperiod for plant requirements
+        lights (object): The light specified by the user
+        life_span (float): The life span of the light fixtures before it requires replacing
+        electricity_consumption (list): The annual electricity consumption
+        days_in_year (float): The number of days in a year
+
+
+    Returns:
+        wattage_requirement (float): The new wattage requirement for replacement lights based on improved light efficiency
+
+        Max: 50% reduction in COGS - direct labour
+        Minimum: 10
+        AVG: 30% # 30% efficiency improvement
+        Std Dev: 3
+        Frequency: After LEDs depreciate
+        Cause: After LEDs depreciated update better lights
+    """
+    HVAC_multiplier = 1.25
+    mu, sigma = 0.7, 0.08
+    s = np.random.normal(mu, sigma)
+    new_wattage_requirement = s * lights.max_power
+    life_span = math.ceil(life_span)
+
+    new_lights_consumption = (avg_photoperiod * new_wattage_requirement * gp.no_lights_full * days_in_year)
+
+    for y in range(life_span, years):
+            electricity_consumption[y+1] = (new_lights_consumption * HVAC_multiplier)/ 1000
+
+    cogs_electricity = [i * scenario.electricity_price for i in electricity_consumption]
+
+    return cogs_electricity, electricity_consumption
+
+
+
+def calc_consumer_sentiment(scenario, years, total_sales):
+    """OPPORTUNITY: Consumer Sentiment - Increasing consumer sentiment and increasing sales of products
+
+        Args:
+            scenario (object): The farm scenario
+            years (int): No. of years for analysis
+            total_sales (list): Waste-adjusted yield for crop 1
+
+        Returns:
+           total_sales (list): Adjusted sales with market sentiment included
+    """
+
 
 
 # Productivity Metrics
@@ -1928,6 +2174,8 @@ staff_list = get_staff_list(scenario)
 capex_pilot, capex_full = calc_capex(scenario, gp)
 risk_counter = build_risk_assessment_counter(years)
 
+#scenario.electricity_price = pba.norm(0.6, 0.1)
+
 byield_crop1, byield_crop2, byield_crop3, byield_crop4 = calc_best_yield(scenario, lettuce_fu_mix, basil_lemon, basil_genovese, none, years)
 light_factor, temp_factor, nutrient_factor, co2_factor = calc_adjustment_factors(scenario)
 ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4 = calc_adjusted_yield(byield_crop1, byield_crop2, byield_crop3, byield_crop4, light_factor, temp_factor, nutrient_factor, co2_factor)
@@ -1955,7 +2203,7 @@ opex_insurance = calc_insurance(scenario, years, months_in_a_year)
 opex_distribution = calc_distribution(scenario, years, months_in_a_year)
  #
 loan_repayments, loan_balance = calc_loan_repayments(scenario, years)
-depreciation = calc_depreciation(scenario, Spectra_Blade_Single_Sided_J, avg_photoperiod, years, days_in_year)
+depreciation, life_span = calc_depreciation(scenario, Spectra_Blade_Single_Sided_J, avg_photoperiod, years, days_in_year)
 # Constructing Financial Overview Data Frame
 financial_annual_overview, financial_monthly_overview = build_dataframe(timeseries_yearly, timeseries_monthly)
 financial_annual_overview = crop_and_revenue_to_df(financial_annual_overview, w1, w2, w3, w4, total_sales)
@@ -1996,11 +2244,13 @@ for s in range(simulations):
 
      # Pathogen Outbreak
      w1_risk, w2_risk, w3_risk, w4_risk = calc_pathogen_outbreak(scenario, years, w1, w2, w3, w4)
+     w1_risk, w2_risk, w3_risk, w4_risk = calc_pest_outbreak(scenario, years, w1_risk, w2_risk, w3_risk, w4_risk)
+     w1_risk, w2_risk, w3_risk, w4_risk = calc_power_outage(scenario, years, w1_risk, w2_risk, w3_risk, w4_risk)
      scrop1, scrop2, scrop3, scrop4, total_sales_risk = calc_produce_sales(w1_risk, w2_risk, w3_risk, w4_risk, scenario)
      customer_withdrawal = calc_customer_withdrawal(scenario, years, total_sales_risk)
      repair = calc_repairs(scenario, years)
      labour_damage, labour_extra_cost = labour_challenges(scenario, years, total_sales_risk, cogs_labour)
-
+     cogs_electricity, electricity_consumption = calc_improved_light_efficiency(scenario, gp, avg_photoperiod, Spectra_Blade_Single_Sided_J, life_span, electricity_consumption, days_in_year)
      # Recomposing Dataframe
      risk_dataframe = crop_and_revenue_to_df(risk_dataframe, w1_risk, w2_risk, w3_risk, w4_risk, total_sales_risk)
      risk_dataframe.loc['Revenue - Crop Sales'] -= customer_withdrawal
@@ -2017,6 +2267,8 @@ for s in range(simulations):
      risk_dataframe = extra_to_df(risk_dataframe, loan_repayments, loan_balance, scenario,
                                              depreciation)
 
+     risk_dataframe = calc_planning_delay(risk_dataframe, timeseries_yearly, years)
+
      # ROI
      roi_risk = calc_roi(scenario, risk_dataframe, years)
      risk_dataframe.loc['Return on Investment'] = roi_risk
@@ -2026,7 +2278,6 @@ for s in range(simulations):
      ax2.plot(risk_dataframe.columns, roi_risk)
      ax4.plot(risk_dataframe.columns, risk_dataframe.loc['Revenue - Crop Sales'])
      ax5.plot(risk_dataframe.columns, repair)
-
 
 risk_assessment_probability = risk_assessment_probability(risk_counter, years, simulations)
 export_results(financial_annual_overview, financial_summary, risk_dataframe)
