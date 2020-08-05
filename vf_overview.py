@@ -4,9 +4,6 @@ from datetime import timedelta
 from inputs import Scenario
 from inputs import Growthplan
 from inputs import Staff
-from equipment import Lights
-from equipment import System
-from crops import Crops
 import pandas as pd
 import numpy as np
 from dateutil.relativedelta import *
@@ -16,6 +13,7 @@ import os
 from math import pi
 import math
 #import pba
+from vf_crops import CropParameters, basil_lemon, basil_genovese, lettuce_fu_mix, null_crop
 
 from openpyxl import Workbook
 
@@ -79,45 +77,18 @@ def get_scenario():
     scenario.loan_tenure = inputs['loan_tenure']
     scenario.loan_type = inputs['loan_type']
 
-    # crop 1
-    scenario.crop_typ1 = inputs['crop_typ1']
-    scenario.crop1_percent = inputs['crop1_percent']
-    scenario.crop1_system = inputs['crop1_system']
-    scenario.crop1_harvest_weight = inputs['crop1_harvest_weight']
-    scenario.crop1_product_weight = inputs['crop1_product_weight']
-    scenario.crop1_customer_percent = inputs['crop1_customer_percent']
-    scenario.crop1_price1 = inputs['crop1_price1']
-    scenario.crop1_price2 = inputs['crop1_price2']
-
-    # crop 2
-    scenario.crop_typ2 = inputs['crop_typ2']
-    scenario.crop2_percent = inputs['crop2_percent']
-    scenario.crop2_system = inputs['crop2_system']
-    scenario.crop2_harvest_weight = inputs['crop2_harvest_weight']
-    scenario.crop2_product_weight = inputs['crop2_product_weight']
-    scenario.crop2_customer_percent = inputs['crop2_customer_percent']
-    scenario.crop2_price1 = inputs['crop2_price1']
-    scenario.crop2_price2 = inputs['crop2_price2']
-
-    # crop 3
-    scenario.crop_typ3 = inputs['crop_typ3']
-    scenario.crop3_percent = inputs['crop3_percent']
-    scenario.crop3_system = inputs['crop3_system']
-    scenario.crop3_harvest_weight = inputs['crop3_harvest_weight']
-    scenario.crop3_product_weight = inputs['crop3_product_weight']
-    scenario.crop3_customer_percent = inputs['crop3_customer_percent']
-    scenario.crop3_price1 = inputs['crop3_price1']
-    scenario.crop3_price2 = inputs['crop3_price2']
-
-    # crop 4
-    scenario.crop_typ4 = inputs['crop_typ4']
-    scenario.crop4_percent = inputs['crop4_percent']
-    scenario.crop4_system = inputs['crop4_system']
-    scenario.crop4_harvest_weight = inputs['crop4_harvest_weight']
-    scenario.crop4_product_weight = inputs['crop4_product_weight']
-    scenario.crop4_customer_percent = inputs['crop4_customer_percent']
-    scenario.crop4_price1 = inputs['crop4_price1']
-    scenario.crop4_price2 = inputs['crop4_price2']
+    # for crop_type in ['lettuce_fu_mix', 'basil_lemon', 'basil_genovese']:
+    for i in range(1,5):
+        crop_parameter = CropParameters()
+        crop_parameter.type = inputs[f"crop_typ{i}"]
+        crop_parameter.percent = inputs[f"crop{i}_percent"]
+        crop_parameter.system = inputs[f"crop{i}_system"]
+        crop_parameter.harvest_weight = inputs[f"crop{i}_harvest_weight"]
+        crop_parameter.product_weight = inputs[f"crop{i}_product_weight"]
+        crop_parameter.customer_percent = inputs[f"crop{i}_customer_percent"]
+        crop_parameter.price1 = inputs[f"crop{i}_price1"]
+        crop_parameter.price2 = inputs[f"crop{i}_price2"]
+        scenario.crop_parameters.append(crop_parameter)
 
     # Growth multiplier
     scenario.vadded_products_multiplier = inputs['vadded_products_multiplier']
@@ -401,9 +372,8 @@ def calc_hvac_energy(scenario, days_in_year):
     energy_consumption_from_HVAC = q * conv_factor_kJph_to_kWh * days_in_year
 
 
-
 # Yields
-def calc_best_yield(scenario, growth_plan, crop_typ1, crop_typ2, crop_typ3, crop_typ4, years):
+def calc_best_yield(scenario, growth_plan, years):
     """Calculate Best Case Yield
     Note:
         Retrieves the best case yield for a given crop type by seeking the attribute that aligns with the system type
@@ -427,28 +397,31 @@ def calc_best_yield(scenario, growth_plan, crop_typ1, crop_typ2, crop_typ3, crop
         2. Crop type as on object is an input. Ideally crop_typ1 should be mapped onto scenario.crop_typ1 which is currently a string rather than an object.
     """
 
-    byield_crop1 = [0]
-    byield_crop2 = [0]
-    byield_crop3 = [0]
-    byield_crop4 = [0]
-    max_yield_crop1 = crop_typ1.drip_tower
-    max_yield_crop2 = crop_typ2.drip_tower
-    max_yield_crop3 = crop_typ3.drip_tower
-    max_yield_crop4 = crop_typ4.drip_tower
+    crop_yields = []
+    for crop_parameter in scenario.crop_parameters:
+        crop = None
+        if crop_parameter.type == 'Basil - Lemon':
+            crop = basil_lemon
+        elif crop_parameter.type == 'Lettuce (Farm Urban Mix)':
+            crop = basil_genovese
+        elif crop_parameter.type == 'None':
+            crop = lettuce_fu_mix
+        elif crop_parameter.type == 'Basil - Genovese':
+            crop = null_crop
+        else:
+            raise RuntimeError(f"Unknown crop: {crop_parameter.type}")
 
-    for y in range(1, years+1):
-        if y == 1:  # under upgrade year check gp.upgrade_year
-            byield_crop1.append(max_yield_crop1  * scenario.stacked_growing_area_pilot * scenario.crop1_percent)
-            byield_crop2.append(max_yield_crop2 * scenario.stacked_growing_area_pilot * scenario.crop2_percent)
-            byield_crop3.append(max_yield_crop3 * scenario.stacked_growing_area_pilot * scenario.crop3_percent)
-            byield_crop4.append(max_yield_crop4  * scenario.stacked_growing_area_pilot * scenario.crop4_percent)
-        elif y > 1:
-            byield_crop1.append(max_yield_crop1 * growth_plan.stacked_growing_area_full * scenario.crop1_percent)
-            byield_crop2.append(max_yield_crop2 * growth_plan.stacked_growing_area_full * scenario.crop2_percent)
-            byield_crop3.append(max_yield_crop3 * growth_plan.stacked_growing_area_full * scenario.crop3_percent)
-            byield_crop4.append(max_yield_crop4 * growth_plan.stacked_growing_area_full * scenario.crop4_percent)
+        current_crop_yield = [0]
+        max_yield = crop.drip_tower
+        for y in range(1, years+1):
+            if y == 1:  # under upgrade year check gp.upgrade_year
+                current_crop_yield.append(max_yield  * scenario.stacked_growing_area_pilot * crop_parameter.percent)
+            elif y > 1:
+                current_crop_yield.append(max_yield * growth_plan.stacked_growing_area_full * crop_parameter.percent)
+        crop_yields.append(current_crop_yield)
 
-    return byield_crop1, byield_crop2, byield_crop3, byield_crop4
+    return crop_yields
+
 
 def calc_adjustment_factors(scenario):
     """Calculate Adjustment Factors
@@ -547,10 +520,12 @@ def calc_no_of_plants(scenario, w1, w2, w3, w4):
 
     To Do:
     """
-    crop1_no_plants = [i / scenario.crop1_harvest_weight for i in w1]
-    crop2_no_plants = [i / scenario.crop2_harvest_weight for i in w2]
-    crop3_no_plants = [i / scenario.crop3_harvest_weight for i in w3]
-    crop4_no_plants = [i / scenario.crop4_harvest_weight for i in w4]
+    num_plants = []
+    for crop in scenario.crop_parameters:
+        this_num_plants = [i / crop.harvest_weight for i in w1]
+        num_plants.append(this_num_plants)
+
+    crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants = num_plants
 
     total_no_of_plants = [a + b + c + d for a, b, c, d in zip(crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants)]
 
