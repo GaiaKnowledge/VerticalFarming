@@ -13,6 +13,8 @@ from inputs import Growthplan
 from inputs import Staff
 import vf_crops
 
+MONTHS_IN_YEAR = 12
+DAYS_IN_YEAR = 365.25
 
 # Input File
 def get_scenario():
@@ -257,7 +259,7 @@ def get_calendar(start_date, years):
     return end_date, timeseries_monthly, timeseries_yearly
 
 # Growth Plans
-def get_gp(scenario, days_in_year):
+def get_gp(scenario):
     """Get Growth Plan
 
     Args:
@@ -270,7 +272,7 @@ def get_gp(scenario, days_in_year):
     """
 
     gp = Growthplan()
-    gp.upgrade_year = scenario.start_date + timedelta(days=days_in_year) # When scaling of pilot farm occurs
+    gp.upgrade_year = scenario.start_date + timedelta(days=DAYS_IN_YEAR) # When scaling of pilot farm occurs
     gp.facility_size_full = scenario.facility_size_pilot * scenario.growing_area_mulitplier
     gp.percent_production_area_full = scenario.percent_production_area_pilot
     gp.growing_levels_full = scenario.growing_levels_pilot
@@ -309,7 +311,7 @@ def calc_capex(scenario, gp):
 
     return capex_pilot, capex_full
 
-def calc_hvac_energy(scenario, days_in_year):
+def calc_hvac_energy(scenario):
     """Heating, Ventilation and Air Cooling (HVAC) Energy Calculator
     Notes: Law of Thermodynamics: Change in Internal Energy = Heat added to the system - Work done by the system
            Q=UxSAx(Tin-Tout) x Efficiency
@@ -362,7 +364,7 @@ def calc_hvac_energy(scenario, days_in_year):
     Tout = 20 # Outside air temperature (°C)
     efficiency = 0.75  # Efficency of the heating, and air cooling system
 
-    energy_consumption_from_HVAC = q * conv_factor_kJph_to_kWh * days_in_year
+    energy_consumption_from_HVAC = q * conv_factor_kJph_to_kWh * DAYS_IN_YEAR
 
 
 # Yields
@@ -633,7 +635,7 @@ def calc_grants_rev(years):
 
 # COGS
 
-def calc_direct_labour(farmhand, delivery, part_time, years, months_in_a_year, scenario):
+def calc_direct_labour(farmhand, delivery, part_time, years, scenario):
     """Calculate Direct Labour costs Function
 
     Args:
@@ -641,7 +643,6 @@ def calc_direct_labour(farmhand, delivery, part_time, years, months_in_a_year, s
        delivery (object): The role of delivery and its attributes
        part_time (object): The role of part-time and its attributes
        years (int): The number of years the analysis will look at
-       months_in_a_year (int): The number of months in a year
        scenario (object): The farm scenario
 
     Returns:
@@ -664,9 +665,9 @@ def calc_direct_labour(farmhand, delivery, part_time, years, months_in_a_year, s
     for y in range(1, years+1):
 
         if y == 1:
-            direct_labour_cost = months_in_a_year*((farmhand.salary * farmhand.count_pilot) + (delivery.salary * delivery.count_pilot) + (part_time.count_pilot * part_time.hours * part_time.wage))
+            direct_labour_cost = MONTHS_IN_YEAR*((farmhand.salary * farmhand.count_pilot) + (delivery.salary * delivery.count_pilot) + (part_time.count_pilot * part_time.hours * part_time.wage))
         elif y > 1:
-            direct_labour_cost = months_in_a_year*((farmhand.salary * farmhand.count_full) + (delivery.salary * delivery.count_full) + (part_time.count_full * part_time.hours * part_time.wage * (1-labour_efficency_counter)))
+            direct_labour_cost = MONTHS_IN_YEAR*((farmhand.salary * farmhand.count_full) + (delivery.salary * delivery.count_full) + (part_time.count_full * part_time.hours * part_time.wage * (1-labour_efficency_counter)))
 
         labour_efficency_counter += np.random.normal(mu, sigma)
         cogs_direct_labour.append(direct_labour_cost)
@@ -766,7 +767,7 @@ def calc_avg_photoperiod(scenario):
         avg_photoperiod += crop_param.percent * crop.photoperiod
     return avg_photoperiod
 
-def calc_electricity(scenario, gp, avg_photoperiod, light, days_in_year, years):
+def calc_electricity(scenario, gp, avg_photoperiod, light, years):
     """Calculate Electricity costs Function
 
     Args:
@@ -774,7 +775,6 @@ def calc_electricity(scenario, gp, avg_photoperiod, light, days_in_year, years):
        gp (object): Growth plan for Farm
        avg_photoperiod (float): Average photoperiod of lights considering crop requirements
        light (object): The light selected by the user
-       days_in_year (float): The number of days in a year
        years (int): The no. of years the simulation will analyse
 
     Returns:
@@ -789,20 +789,19 @@ def calc_electricity(scenario, gp, avg_photoperiod, light, days_in_year, years):
     HVAC_multiplier = 1.25
     for y in range(years+1):
         if y == 1:
-            electricity_consumption.append(avg_photoperiod * light.max_power * scenario.no_lights_pilot * days_in_year/ 1000)
+            electricity_consumption.append(avg_photoperiod * light.max_power * scenario.no_lights_pilot * DAYS_IN_YEAR/ 1000)
         elif y > 1: # Multiplied by 1.25 to accomodate HVAC upgrade
-            electricity_consumption.append(avg_photoperiod * light.max_power * gp.no_lights_full * days_in_year * HVAC_multiplier/ 1000)
+            electricity_consumption.append(avg_photoperiod * light.max_power * gp.no_lights_full * DAYS_IN_YEAR * HVAC_multiplier/ 1000)
 
     cogs_electricity = [i * scenario.electricity_price for i in electricity_consumption]
     return cogs_electricity, electricity_consumption
 
-def calc_water(scenario, years, days_in_year):
+def calc_water(scenario, years):
     """Calculate Water costs Function
 
     Args:
        scenario (object): The farm scenario
        years (int): The no. of years the simulation will analyse
-       days_in_year (float): The number of days in a year
 
     Returns:
         cogs_water (list): Cost of Goods Sold expenditure on Water as a time series for each year
@@ -812,9 +811,9 @@ def calc_water(scenario, years, days_in_year):
 
     for y in range(years+1):
         if y == 1:
-            water_consumption.append(scenario.system_quantity * 0.95 * days_in_year + (1900*12))
+            water_consumption.append(scenario.system_quantity * 0.95 * DAYS_IN_YEAR + (1900*12))
         elif y > 1:
-            water_consumption.append((scenario.system_quantity * 0.95 * days_in_year + (1900*12)) * scenario.growing_area_mulitplier)
+            water_consumption.append((scenario.system_quantity * 0.95 * DAYS_IN_YEAR + (1900*12)) * scenario.growing_area_mulitplier)
 
     cogs_water = [i * scenario.water_price for i in water_consumption]
 
@@ -822,13 +821,12 @@ def calc_water(scenario, years, days_in_year):
 
 # OPEX
 
-def calc_rent(scenario, years, months_in_a_year):
+def calc_rent(scenario, years):
     """Calculate Rent costs Function
 
     Args:
        scenario (object): The farm scenario
        years (int): The no. of years the simulation will analyse
-       months_in_a_year (int): The number of months in a year
 
     Returns:
         opex_rent (list): Operational expenditure on other costs as a time series for each year
@@ -836,13 +834,13 @@ def calc_rent(scenario, years, months_in_a_year):
     opex_rent = [0]
     for y in range(years+1):
         if y == 1:
-            opex_rent.append(scenario.monthly_rent_y1* months_in_a_year)
+            opex_rent.append(scenario.monthly_rent_y1* MONTHS_IN_YEAR)
         elif y > 1:
-            opex_rent.append(scenario.monthly_rent_y2 * months_in_a_year)
+            opex_rent.append(scenario.monthly_rent_y2 * MONTHS_IN_YEAR)
 
     return opex_rent
 
-def calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_person, years, months_in_a_year):
+def calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_person, years):
     """Calculate Salaries costs Function
 
     Args:
@@ -854,7 +852,6 @@ def calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_pe
        headgrower (object): The role of head grower and its associated values
        sales_person (object): The role of sales person and its associated values
        years (int): The no. of years the simulation will analyse
-       months_in_a_year (int)
 
     Returns:
         opex_salaries (list): Operational expenditure on salaries as a time series for each year
@@ -864,12 +861,12 @@ def calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_pe
     for y in range(1, years+1):
 
         if y == 1:
-            staff_cost = months_in_a_year * (ceo.cost_pilot + scientist.cost_pilot +\
+            staff_cost = MONTHS_IN_YEAR * (ceo.cost_pilot + scientist.cost_pilot +\
                         marketer.cost_pilot + admin.cost_pilot +\
                         manager.cost_pilot + headgrower.cost_pilot + \
                         sales_person.cost_pilot)
         elif y > 1:
-            staff_cost = months_in_a_year * (ceo.cost_full + scientist.cost_full +\
+            staff_cost = MONTHS_IN_YEAR * (ceo.cost_full + scientist.cost_full +\
                         marketer.cost_full + admin.cost_full +\
                         manager.cost_full + headgrower.cost_full + \
                         sales_person.cost_full)
@@ -897,13 +894,12 @@ def calc_other_costs(scenario, opex_staff, years):
 
     return opex_other_costs
 
-def calc_insurance(scenario, years, months_in_a_year):
+def calc_insurance(scenario, years):
     """Calculate Insurance costs Function
 
     Args:
        scenario (object): The farm scenario
        years (int): The no. of years the simulation will analyse
-       months_in_a_year (int): The no. of months in a year
 
     Returns:
         opex_insurance (list): Operational expenditure on insurance as a time series for each year
@@ -911,20 +907,19 @@ def calc_insurance(scenario, years, months_in_a_year):
     opex_insurance = [0]
     for y in range(years + 1):
         if y == 1:
-            opex_insurance.append(scenario.insurance_pilot * months_in_a_year)
+            opex_insurance.append(scenario.insurance_pilot * MONTHS_IN_YEAR)
         elif y > 1:
-            opex_insurance.append(scenario.insurance_full * months_in_a_year)
+            opex_insurance.append(scenario.insurance_full * MONTHS_IN_YEAR)
 
     return opex_insurance
 
 
-def calc_distribution(scenario, years, months_in_a_year):
+def calc_distribution(scenario, years):
     """Calculate Distribution costs Function
 
     Args:
        scenario (object): The farm scenario
        years (int): The no. of years the simulation will analyse
-       months_in_a_year (int): The no. of months in a year
 
     Returns:
         opex_distribution (list): Operational expenditure on distribution as a time series for each year
@@ -933,9 +928,9 @@ def calc_distribution(scenario, years, months_in_a_year):
     opex_distribution = [0]
     for y in range(years + 1):
         if y == 1:
-            opex_distribution.append(scenario.monthly_distribution_y1 * months_in_a_year)
+            opex_distribution.append(scenario.monthly_distribution_y1 * MONTHS_IN_YEAR)
         elif y > 1:
-            opex_distribution.append(scenario.monthly_distribution_y2 * months_in_a_year)
+            opex_distribution.append(scenario.monthly_distribution_y2 * MONTHS_IN_YEAR)
 
     return opex_distribution
 
@@ -969,7 +964,7 @@ def calc_loan_repayments(scenario, years):
         loan_balance.append(round(loan_balance[y-1]-loan_repayments[y]+(loan_balance[y-1]*scenario.loan_interest),2))
     return loan_repayments, loan_balance
 
-def calc_depreciation(scenario, lights, avg_photoperiod, years, days_in_year):
+def calc_depreciation(scenario, lights, avg_photoperiod, years):
 
     """Calculate Depreciation Function to Compute Total Farm Depreciation each Year
        Typically accounts for 21 production costs
@@ -979,7 +974,6 @@ def calc_depreciation(scenario, lights, avg_photoperiod, years, days_in_year):
        lights (object): The lights used on the farm
        avg_photoperiod (float): The average photoperiod of lights on the farm
        years (int): The no. of years the simulation will analyse
-       days_in_year (float): The no. of days in the year
 
     Returns:
         depreciation (list): Depreciation as a timeseries of costs
@@ -1004,7 +998,7 @@ def calc_depreciation(scenario, lights, avg_photoperiod, years, days_in_year):
     # Lights
     life_time_acceleration_factor = 0.8
     life_time = lights.life_time * life_time_acceleration_factor # Hours
-    life_span = (life_time / avg_photoperiod)/days_in_year
+    life_span = (life_time / avg_photoperiod)/DAYS_IN_YEAR
     lights_depreciation_percent = 1/life_span
     lights_depreciation = lights_depreciation_percent * scenario.capex_lights
 
@@ -1820,7 +1814,7 @@ def improved_labour_efficiency():
     return labour_efficiency
 
 
-def calc_improved_light_efficiency(scenario, years, gp, avg_photoperiod, lights, life_span, electricity_consumption, days_in_year):
+def calc_improved_light_efficiency(scenario, years, gp, avg_photoperiod, lights, life_span, electricity_consumption):
     """Opportunity: Light Efficiency Improvement when Lights depreciated and replaced
 
     Notes:
@@ -1837,7 +1831,6 @@ def calc_improved_light_efficiency(scenario, years, gp, avg_photoperiod, lights,
         lights (object): The light specified by the user
         life_span (float): The life span of the light fixtures before it requires replacing
         electricity_consumption (list): The annual electricity consumption
-        days_in_year (float): The number of days in a year
 
 
     Returns:
@@ -1856,7 +1849,7 @@ def calc_improved_light_efficiency(scenario, years, gp, avg_photoperiod, lights,
     new_wattage_requirement = s * lights.max_power
     life_span = math.ceil(life_span)
 
-    new_lights_consumption = (avg_photoperiod * new_wattage_requirement * gp.no_lights_full * days_in_year)
+    new_lights_consumption = (avg_photoperiod * new_wattage_requirement * gp.no_lights_full * DAYS_IN_YEAR)
 
     for y in range(life_span, years):
             electricity_consumption[y+1] = (new_lights_consumption * HVAC_multiplier)/ 1000

@@ -59,15 +59,11 @@ from vf_overview import productivity_targets
 from vf_overview import reduced_product_quality
 from vf_overview import risk_assessment
 from vf_overview import risk_assessment_probability
-
 from vf_equipment import Lights
 
 
 cwd = os.getcwd()  # Get the current working directory (cwd)
 files = os.listdir(cwd)  # Get all the files in that directory
-
-months_in_a_year = 12
-days_in_year = 365.25
 
 years = 15 # Time series length !!UP TO 20!!
 simulations = 20
@@ -84,7 +80,7 @@ Spectra_Blade_Single_Sided_J = Lights('Intravision Spectra Blade Single Sided - 
 scenario = get_scenario()
 ceo, headgrower, marketer, scientist, sales_person, manager, delivery, farmhand, admin, part_time = get_staff_list(scenario)
 end_date, timeseries_monthly, timeseries_yearly = get_calendar(scenario.start_date, years)
-growth_plan = get_gp(scenario, days_in_year)
+growth_plan = get_gp(scenario)
 staff_list = get_staff_list(scenario)
 capex_pilot, capex_full = calc_capex(scenario, growth_plan)
 risk_counter = build_risk_assessment_counter(years)
@@ -95,7 +91,6 @@ risk_counter = build_risk_assessment_counter(years)
 crop_yields = calc_best_yield(scenario, growth_plan, years)
 light_factor, temp_factor, nutrient_factor, co2_factor = calc_adjustment_factors(scenario)
 adjusted_yields = calc_adjusted_yield(crop_yields, light_factor, temp_factor, nutrient_factor, co2_factor)
-#w1, w2, w3, w4 = calc_waste_adjusted_yield(scenario, adjusted_yields, years)
 weight_adjusted_yields = calc_waste_adjusted_yield(scenario, adjusted_yields, years)
 crop_sales, total_sales = calc_produce_sales(weight_adjusted_yields, scenario)
 vadded_sales = calc_vadded_sales(scenario, years)
@@ -104,22 +99,22 @@ tourism_rev = calc_tourism_rev(scenario, years)
 hospitality_rev = calc_hospitality_rev(scenario, years)
 grants_rev = calc_grants_rev(years)
 
-cogs_labour, direct_labour = calc_direct_labour(farmhand, delivery, part_time, years, months_in_a_year, scenario)
+cogs_labour, direct_labour = calc_direct_labour(farmhand, delivery, part_time, years, scenario)
 cogs_media = calc_growing_media(total_sales)
 cogs_packaging = calc_packaging(scenario, years, weight_adjusted_yields)
 cogs_seeds_nutrients, nutrient_consumption, total_no_of_plants = calc_nurients_and_num_plants(scenario, weight_adjusted_yields)
 avg_photoperiod = calc_avg_photoperiod(scenario)
-cogs_electricity, electricity_consumption = calc_electricity(scenario, growth_plan, avg_photoperiod, Spectra_Blade_Single_Sided_J, days_in_year, years)
-cogs_water, water_consumption = calc_water(scenario, years, days_in_year)
+cogs_electricity, electricity_consumption = calc_electricity(scenario, growth_plan, avg_photoperiod, Spectra_Blade_Single_Sided_J, years)
+cogs_water, water_consumption = calc_water(scenario, years)
 
-opex_rent = calc_rent(scenario, years, months_in_a_year)
-opex_salaries = calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_person, years, months_in_a_year)
+opex_rent = calc_rent(scenario, years)
+opex_salaries = calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_person, years)
 opex_other_costs = calc_other_costs(scenario, opex_salaries, years)
-opex_insurance = calc_insurance(scenario, years, months_in_a_year)
-opex_distribution = calc_distribution(scenario, years, months_in_a_year)
- #
+opex_insurance = calc_insurance(scenario, years)
+opex_distribution = calc_distribution(scenario, years)
+
 loan_repayments, loan_balance = calc_loan_repayments(scenario, years)
-depreciation, life_span = calc_depreciation(scenario, Spectra_Blade_Single_Sided_J, avg_photoperiod, years, days_in_year)
+depreciation, life_span = calc_depreciation(scenario, Spectra_Blade_Single_Sided_J, avg_photoperiod, years)
 # Constructing Financial Overview Data Frame
 financial_annual_overview, financial_monthly_overview = build_dataframe(timeseries_yearly, timeseries_monthly)
 financial_annual_overview = crop_and_revenue_to_df(financial_annual_overview, weight_adjusted_yields, total_sales, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev)
@@ -163,7 +158,7 @@ for s in range(simulations):
      customer_withdrawal = calc_customer_withdrawal(scenario, years, total_sales_risk)
      repair = calc_repairs(scenario, years)
      labour_damage, labour_extra_cost = labour_challenges(scenario, years, total_sales_risk, cogs_labour)
-     cogs_electricity, electricity_consumption = calc_improved_light_efficiency(scenario, years, growth_plan, avg_photoperiod, Spectra_Blade_Single_Sided_J, life_span, electricity_consumption, days_in_year)
+     cogs_electricity, electricity_consumption = calc_improved_light_efficiency(scenario, years, growth_plan, avg_photoperiod, Spectra_Blade_Single_Sided_J, life_span, electricity_consumption)
      # Recomposing Dataframe
      risk_dataframe = crop_and_revenue_to_df(risk_dataframe, [w1_risk, w2_risk, w3_risk, w4_risk], total_sales_risk, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev)
      risk_dataframe.loc['Revenue - Crop Sales'] -= customer_withdrawal
