@@ -748,19 +748,10 @@ def calc_nurients_and_num_plants(scenario, weight_adjusted_yields):
         num_plants.append(this_num_plants)
         cogs_seeds.append(this_cogs_seeds)
 
-    #crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants = num_plants
-    #total_no_of_plants = [a + b + c + d for a, b, c, d in zip(crop1_no_plants, crop2_no_plants, crop3_no_plants, crop4_no_plants)]
-    total_no_of_plants = [a + b + c + d for a, b, c, d in zip(*num_plants)]
-
-    # cogs_seeds_crop1 = [i * crop1.seed_cost * (1/crop1.germination_rate) for i in crop1_no_of_plants]
-    # cogs_seeds_crop2 = [i * crop2.seed_cost * (1/crop2.germination_rate) for i in crop2_no_of_plants]
-    # cogs_seeds_crop3 = [i * crop3.seed_cost * (1/crop3.germination_rate) for i in crop3_no_of_plants]
-    # cogs_seeds_crop4 = [i * crop4.seed_cost * (1/crop4.germination_rate) for i in crop4_no_of_plants]
-    # cogs_seeds_nutrients = [sum(x) for x in zip(cogs_seeds_crop1, cogs_seeds_crop2, cogs_seeds_crop3, cogs_seeds_crop4)]
+    total_no_of_plants = [sum(n) for n in zip(*num_plants)]
     cogs_seeds_nutrients = [sum(x) for x in zip(*cogs_seeds)]
     nutrient_consumption = np.random.randint(900, 1100, size=(1, 16))
     #cogs_seeds_nutrients = sum(x) for x in zip(total_seeds_cost, total_nutrients_cost)
-
     return cogs_seeds_nutrients, nutrient_consumption, total_no_of_plants
 
 def calc_avg_photoperiod(scenario):
