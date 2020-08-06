@@ -13,6 +13,7 @@ from vf_overview import calc_avg_photoperiod
 from vf_overview import calc_best_yield
 from vf_overview import calc_capex
 from vf_overview import calc_customer_withdrawal
+from vf_overview import calc_crop_productivity_metrics
 from vf_overview import calc_depreciation
 from vf_overview import calc_direct_labour
 from vf_overview import calc_distribution
