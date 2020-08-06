@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import os
 from math import pi
 import math
-import pba
+#import pba
 
 from openpyxl import Workbook
 
@@ -360,6 +360,48 @@ def calc_capex(scenario, gp):
         capex_full = scenario.capex_full
 
     return capex_pilot, capex_full
+
+def calc_space_breakdown(scenario, gp):
+    """ Space Breakdown - Gives a % breakdown based on desired farm characteristics
+
+    args:
+        scenario (object): The farm scenario
+
+    return:
+        space_breakdown (dataframe): The breakdown of different farm areas
+    """
+    biosecurity= 0.05
+    walkways = 0.25
+    walkways_with_p = 0.28
+    seeding_germination = 0.124
+    seeding_germination_with_p = 0.1
+    nursery = 0.15
+    production = 0.426
+    production_with_p = 0.3
+    production_scenario = scenario.percent_production_area_pilot
+    processing = 0.1
+    cold_storage = 0.02
+
+    if scenario.processing_cold_storage == 'No':
+        biosecurity_area = gp.facility_size_full * biosecurity
+        walkway_area = gp.facility_size_full * walkways
+        seeding_germination_area = gp.facility_size_full * seeding_germination
+        nursery_area = gp.facility_size_full * nursery
+        production_area = gp.growing_area_full
+
+    elif scenario.processing_cold_storage == 'Yes':
+        biosecurity_area = gp.facility_size_full * biosecurity
+        walkway_area = gp.facility_size_full * walkways_with_p
+        seeding_germination_area = gp.facility_size_full * seeding_germination_with_p
+        nursery_area = gp.facility_size_full * nursery
+        production_area = gp.growing_area_full
+        processing_area = gp.facility_size_full * processing
+        cold_storage_Area = gp.facility_size_full * cold_storage
+
+
+
+    return space_breakdown
+
 
 def calc_hvac_energy(scenario, days_in_year):
     """Heating, Ventilation and Air Cooling (HVAC) Energy Calculator
