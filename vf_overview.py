@@ -445,14 +445,13 @@ def calc_adjustment_factors(scenario):
     co2_factor = factor_table.loc['CO2 Enrichment', scenario.co2_enrichment]
     return light_factor, temp_factor, nutrient_factor, co2_factor
 
-def calc_adjusted_yield(byield_crop1, byield_crop2, byield_crop3, byield_crop4, light_factor, temp_factor, nutrient_factor, co2_factor):
-    ayield_crop1 = np.array(byield_crop1, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor
-    ayield_crop2 = np.array(byield_crop2, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor
-    ayield_crop3 = np.array(byield_crop3, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor
-    ayield_crop4 = np.array(byield_crop4, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor
-    return ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4
+def calc_adjusted_yield(crop_yields, light_factor, temp_factor, nutrient_factor, co2_factor):
+    adjusted_yields = []
+    for cyield in crop_yields:
+        adjusted_yields.append(np.array(cyield, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor)
+    return adjusted_yields
 
-def calc_waste_adjusted_yield(scenario, ayield_crop1, ayield_crop2, ayield_crop3, ayield_crop4, years):
+def calc_waste_adjusted_yield(scenario, crop_yields, years):
     """Calculate Waste Adjusted Yields Function
 
     Args:
@@ -471,27 +470,21 @@ def calc_waste_adjusted_yield(scenario, ayield_crop1, ayield_crop2, ayield_crop3
 
     To Do:
     """
-
     waste_rates = pd.DataFrame({'High': [0, 0.1254,	0.1129,	0.1016,	0.0934,	0.0860,	0.0791,	0.0728,	0.0684,	0.0643,	0.0604,	0.0568,	0.0534,	0.0502,	0.0472,	0.0444, 0.0444, 0.0444, 0.0444, 0.0444, 0.0444],
                   'Medium': [0, 0.1777, 0.1599,	0.1439,	0.1324,	0.1218,	0.1121,	0.1031,	0.0969,	0.0911,	0.0856,	0.0805,	0.0757,	0.0711,	0.0668,	0.0628,	0.0628,	0.0628,	0.0628,	0.0628,	0.0628],
                   'Low': [0, 0.2404,	0.2163,	0.1947,	0.1791,	0.1648,	0.1516,	0.1395,	0.1311,	0.1232,	0.1158,	0.1089,	0.1024,	0.0962,	0.0904,	0.0850,	0.0850,	0.0850,	0.0850,	0.0850,	0.850]})
     waste_rates.index = range(0, 21)
-
     # Learning curve for loop according to Dataframe
-    wyield_crop1 =[]
-    wyield_crop2 =[]
-    wyield_crop3 =[]
-    wyield_crop4 =[]
-    for y in range(years+1):
-        wyield_crop1.append(ayield_crop1[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
-        wyield_crop2.append(ayield_crop2[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
-        wyield_crop3.append(ayield_crop3[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
-        wyield_crop4.append(ayield_crop4[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
-
-    return wyield_crop1, wyield_crop2, wyield_crop3, wyield_crop4
+    weight_adjusted_yields = []
+    for cyield in crop_yields:
+        this_yield = []
+        for y in range(years+1):
+            this_yield.append(cyield[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
+        weight_adjusted_yields.append(this_yield)
+    return weight_adjusted_yields
 
 # Revenue
-def calc_produce_sales(w1, w2, w3, w4, scenario):
+def calc_produce_sales(weight_adjusted_yields, scenario):
     """Calculate Product Sales Revenue Function
 
     Args:
@@ -513,22 +506,12 @@ def calc_produce_sales(w1, w2, w3, w4, scenario):
     crop_sales = []
     for i, crop in enumerate(scenario.crop_parameters):
         this_crop_sales = []
-        # THIS IS A HORRIBLE HACK - w should be passed in as a list
-        if i == 0:
-            w = w1
-        elif i == 1:
-            w = w2
-        elif i == 2:
-            w = w3
-        elif i == 3:
-            w = w4
+        w = weight_adjusted_yields[i]
         for x in range(len(w)):
             this_crop_sales.append((w[x] * crop.price1 * crop.customer_percent / crop.product_weight) + (w[x] * crop.price2 * (1-crop.customer_percent) / crop.product_weight))
         crop_sales.append(this_crop_sales)
-    sales_crop1, sales_crop2, sales_crop3, sales_crop4 = crop_sales
-    total_sales = [a + b + c + d for a, b, c, d in zip(sales_crop1, sales_crop2, sales_crop3, sales_crop4)]
-
-    return sales_crop1, sales_crop2, sales_crop3, sales_crop4, total_sales
+    total_sales = [sum(sales) for sales in zip(*crop_sales)]
+    return crop_sales, total_sales
 
 def calc_vadded_sales(scenario, years):
     """Calculate Value Added Revenue Function
@@ -717,7 +700,7 @@ def calc_growing_media(total_sales):
     #scenario.growing_media * price_of_media * no_of_plants
     return cogs_media
 
-def calc_packaging(scenario, years, w1, w2, w3, w4):
+def calc_packaging(scenario, years, weight_adjusted_yields):
     """Calculate Packaging costs Function
 
     Args:
@@ -743,10 +726,8 @@ def calc_packaging(scenario, years, w1, w2, w3, w4):
 
     for y in range(years+1):
         annual_packaging_cost = 0
-        annual_packaging_cost += (w1[y] / scenario.crop_parameters[0].product_weight)
-        # annual_packaging_cost += (w2[y]/scenario.crop2_product_weight)
-        # annual_packaging_cost += (w3[y]/scenario.crop3_product_weight)
-        # annual_packaging_cost += (w4[y]/scenario.crop4_product_weight)
+        for i, w in enumerate(weight_adjusted_yields):
+            annual_packaging_cost += (w[y] / scenario.crop_parameters[i].product_weight)
         if y <= 1:
             annual_packaging_cost *= scenario.packaging_cost_pilot
         elif y > 1:
@@ -756,19 +737,11 @@ def calc_packaging(scenario, years, w1, w2, w3, w4):
     return cogs_packaging
 
 
-def calc_nurients_and_num_plants(scenario, w1, w2, w3, w4):
+def calc_nurients_and_num_plants(scenario, weight_adjusted_yields):
     num_plants = []
     cogs_seeds = []
     for i, crop_param in enumerate(scenario.crop_parameters):
-        # THIS IS A HORRIBLE HACK - w should be passed in as a list
-        if i == 0:
-            w = w1
-        elif i == 1:
-            w = w2
-        elif i == 2:
-            w = w3
-        elif i == 3:
-            w = w4
+        w = weight_adjusted_yields[i]
         crop = vf_crops.get_crop(crop_param.type)
         this_num_plants = [i / crop_param.harvest_weight for i in w]
         this_cogs_seeds = [i * crop.seed_cost * (1.0/crop.germination_rate) for i in this_num_plants]
