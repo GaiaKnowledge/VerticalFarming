@@ -1,24 +1,18 @@
 # coding=utf-8
 from datetime import datetime
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
+import pandas as pd
+import numpy as np
+import random
+import math
+
+# Local imports
 from inputs import Scenario
 from inputs import Growthplan
 from inputs import Staff
-import pandas as pd
-import numpy as np
-from dateutil.relativedelta import *
-import random
-import matplotlib.pyplot as plt
-import os
-from math import pi
-import math
-#import pba
 import vf_crops
 
-from openpyxl import Workbook
-
-days_in_year = 365.25
-months_in_a_year = 12
 
 # Input File
 def get_scenario():
@@ -32,7 +26,7 @@ def get_scenario():
     To Do:
     """
 
-    input_filepath = './Current_Financial_Model.xlsx' # Make a copy and call spreadsheet this name
+    input_filepath = './Current_Financial_Model.xlsx'  # Make a copy and call spreadsheet this name
     inputs = pd.read_excel(input_filepath, index_col=0).to_dict()
     inputs = inputs['Inputs']
 
@@ -263,7 +257,7 @@ def get_calendar(start_date, years):
     return end_date, timeseries_monthly, timeseries_yearly
 
 # Growth Plans
-def get_gp(scenario):
+def get_gp(scenario, days_in_year):
     """Get Growth Plan
 
     Args:
@@ -407,7 +401,6 @@ def calc_best_yield(scenario, growth_plan, years):
             elif y > 1:
                 current_crop_yield.append(max_yield * growth_plan.stacked_growing_area_full * crop_parameter.percent)
         crop_yields.append(current_crop_yield)
-
     return crop_yields
 
 
@@ -507,8 +500,8 @@ def calc_produce_sales(weight_adjusted_yields, scenario):
     for i, crop in enumerate(scenario.crop_parameters):
         this_crop_sales = []
         w = weight_adjusted_yields[i]
-        for x in range(len(w)):
-            this_crop_sales.append((w[x] * crop.price1 * crop.customer_percent / crop.product_weight) + (w[x] * crop.price2 * (1-crop.customer_percent) / crop.product_weight))
+        for yw in w:
+            this_crop_sales.append((yw * crop.price1 * crop.customer_percent / crop.product_weight) + (yw * crop.price2 * (1-crop.customer_percent) / crop.product_weight))
         crop_sales.append(this_crop_sales)
     total_sales = [sum(sales) for sales in zip(*crop_sales)]
     return crop_sales, total_sales
@@ -794,7 +787,6 @@ def calc_electricity(scenario, gp, avg_photoperiod, light, days_in_year, years):
 
     electricity_consumption =[0]
     HVAC_multiplier = 1.25
-
     for y in range(years+1):
         if y == 1:
             electricity_consumption.append(avg_photoperiod * light.max_power * scenario.no_lights_pilot * days_in_year/ 1000)
@@ -830,7 +822,7 @@ def calc_water(scenario, years, days_in_year):
 
 # OPEX
 
-def calc_rent(scenario, years, month_in_a_year):
+def calc_rent(scenario, years, months_in_a_year):
     """Calculate Rent costs Function
 
     Args:
@@ -1127,7 +1119,7 @@ def build_dataframe(timeseries_yearly, timeseries_monthly):
                          'Net Profit', 'Return on Investment'] ,columns=timeseries_monthly)
     return financial_annual_overview, financial_monthly_overview
 
-def crop_and_revenue_to_df(financial_annual_overview, w1, w2, w3, w4, total_sales, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev):
+def crop_and_revenue_to_df(financial_annual_overview, weight_adjusted_yields, total_sales, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev):
     """Adding yields and sales information to financial overview
 
             Notes:
@@ -1145,10 +1137,8 @@ def crop_and_revenue_to_df(financial_annual_overview, w1, w2, w3, w4, total_sale
                 financial_annual_overview (dataframe): Financial overview of important data
         """
 
-    financial_annual_overview.loc['Yield Crop 1'] = w1
-    financial_annual_overview.loc['Yield Crop 2'] = w2
-    financial_annual_overview.loc['Yield Crop 3'] = w3
-    financial_annual_overview.loc['Yield Crop 4'] = w4
+    for i, w in enumerate(weight_adjusted_yields):
+        financial_annual_overview.loc['Yield Crop {i+1}'] = w
     financial_annual_overview.loc['Revenue - Crop Sales'] = total_sales
     financial_annual_overview.loc['Revenue - Value-Added Products'] = vadded_sales
     financial_annual_overview.loc['Revenue - Education'] = education_rev
@@ -1412,7 +1402,7 @@ def risk_assessment_probability(risk_assessment_counter, years, simulations):
     return risk_assessment_probability
 
 # Risks
-def calc_pathogen_outbreak(scenario, years, w1, w2, w3, w4):
+def calc_pathogen_outbreak(scenario, years, weight_adjusted_yields):
     """RISK: Pathogen outbreak on the farm
 
         Args:
@@ -1469,11 +1459,11 @@ def calc_pathogen_outbreak(scenario, years, w1, w2, w3, w4):
         else:
             pathogen_outbreak.append(1)
 
-    w1_risk = [a * b for a, b in zip(w1, pathogen_outbreak)]
-    w2_risk = [a * b for a, b in zip(w2, pathogen_outbreak)]
-    w3_risk = [a * b for a, b in zip(w3, pathogen_outbreak)]
-    w4_risk = [a * b for a, b in zip(w4, pathogen_outbreak)]
-
+    w_risks = []
+    for w in weight_adjusted_yields:
+        w_risks.append([a * b for a, b in zip(w, pathogen_outbreak)])
+    # HACK!!! THIS NEED TO BE FIXED TO RETURN A LIST
+    w1_risk, w2_risk, w3_risk, w4_risk = w_risks
     return w1_risk, w2_risk, w3_risk, w4_risk
 
 def calc_repairs(scenario, years):
@@ -1564,7 +1554,6 @@ def calc_customer_withdrawal(scenario, years, total_sales):
 
     customer_withdrawal = []
     for y in range(years+1):
-
         if customer_withdrawal_occurrence[y] == 1 and scenario.business_model == 'Wholesale':
             customer_withdrawal.append(total_sales[y] * np.random.beta(5, 10))
         elif customer_withdrawal_occurrence[y] == 1 and scenario.business_model == 'Retail':
@@ -1760,10 +1749,9 @@ def calc_power_outage(scenario, years, w1, w2, w3, w4):
     p_outage = 0.05  # Probability of one power outage for a given year
     p_two_outage = 0.01  # Probability of two power outages for a given year
     p_no_outage = 0.94  # Probability of no power outage for a given year
-    power_outage = np.random.choice(3, years, p=[p_no_outage, p_outage, p_two_outage])
-
+    power_outage = np.random.choice(3, years+1, p=[p_no_outage, p_outage, p_two_outage])
     power_outage = [x * months_harvest for x in power_outage]
-
+    assert len(power_outage) == len(w1), "jmht arrays were of unmatching sizes!"
     if scenario.electrical_backup == 'No':
 
         if scenario.crop1_system == 'Aeroponics':
@@ -1894,7 +1882,7 @@ def calc_consumer_sentiment(scenario, years, total_sales):
 
 
 # Productivity Metrics
-def calc_productivity_metrics(scenario, timeseries_yearly, w1, w2, w3, w4, electricity_consumption, direct_labour,
+def calc_productivity_metrics(scenario, timeseries_yearly, weight_adjusted_yields, electricity_consumption, direct_labour,
                               water_consumption, staff, nutrient_consumption, no_of_plants):
 
     """Calculating Productivity Metrics for the Farm
@@ -1941,7 +1929,7 @@ def calc_productivity_metrics(scenario, timeseries_yearly, w1, w2, w3, w4, elect
                'Nutrient Consumption (kg)', 'No. of Plants', 'CO2 Emitted (kg CO2e)', 'CO2 Mitigated (kg CO2e)',
                'Net CO2 (kg CO2e)'], columns=timeseries_yearly)
 
-    productivity_metrics.loc['Total Yield (kg)'] = [a + b + c + d for a, b, c, d in zip(w1, w2, w3, w4)]
+    productivity_metrics.loc['Total Yield (kg)'] = sum([sum(s) for s in zip(*weight_adjusted_yields)])
     productivity_metrics.loc['Energy Consumption (kWh)'] = electricity_consumption
     productivity_metrics.loc['Direct Labour (man-hours)'] = direct_labour
     productivity_metrics.loc['Water Consumption (L)'] = water_consumption
@@ -1988,15 +1976,22 @@ def calc_crop_productivity_metrics(productivity_metrics, gp, scenario):
                8: 'Yield per kg Net CO2e'}, inplace=True)
     crop_productivity_metrics.loc['Crop Productivity per Unit Area'] = productivity_metrics.loc[
                                                                            'Total Yield (kg)'] / gp.growing_area_full
-    crop_productivity_metrics.loc['Crop Productivity per Unit Energy'] = productivity_metrics.loc['Total Yield (kg)'] / \
-                                                                         productivity_metrics.loc[
-                                                                             'Energy Consumption (kWh)']
+    try:
+        crop_productivity_metrics.loc['Crop Productivity per Unit Energy'] = productivity_metrics.loc['Total Yield (kg)'] / \
+                                                                             productivity_metrics.loc[
+                                                                                 'Energy Consumption (kWh)']
+    except ZeroDivisionError:
+        print("*** ERROR DIVIDING BY ZERO IN calc_crop_productivity_metrics ENERGY - FIX ME!!! ***")
     crop_productivity_metrics.loc['Crop Productivity per Unit Labour'] = productivity_metrics.loc['Total Yield (kg)'] / \
                                                                          productivity_metrics.loc[
                                                                              'Direct Labour (man-hours)']
-    crop_productivity_metrics.loc['Crop Productivity per Unit Water'] = productivity_metrics.loc['Total Yield (kg)'] / \
-                                                                        productivity_metrics.loc[
-                                                                            'Water Consumption (L)']
+    try:
+        crop_productivity_metrics.loc['Crop Productivity per Unit Water'] = productivity_metrics.loc['Total Yield (kg)'] / \
+                                                                            productivity_metrics.loc[
+                                                                                'Water Consumption (L)']
+    except ZeroDivisionError:
+        print("*** ERROR DIVIDING BY ZERO IN calc_crop_productivity_metrics WATER - FIX ME!!! ***")
+
     crop_productivity_metrics.loc['Crop Productivity per Unit Nutrients'] = productivity_metrics.loc[
                                                                                 'Total Yield (kg)'] / \
                                                                             productivity_metrics.loc[
@@ -2006,12 +2001,17 @@ def calc_crop_productivity_metrics(productivity_metrics, gp, scenario):
                                                                                              gp.growing_area_full * scenario.ceiling_height)
     crop_productivity_metrics.loc['No. of Plants per unit area'] = productivity_metrics.loc['No. of Plants'] / (
                 gp.growing_area_full * scenario.ceiling_height)
-    crop_productivity_metrics.loc['Yield per kg CO2 emitted'] = productivity_metrics.loc['Total Yield (kg)'] / \
-                                                                productivity_metrics.loc['CO2 Emitted (kg CO2e)']
-    crop_productivity_metrics.loc['Yield per kg CO2 mitigated'] = productivity_metrics.loc['Total Yield (kg)'] / \
-                                                                  productivity_metrics.loc['CO2 Mitigated (kg CO2e)']
-    crop_productivity_metrics.loc['Yield per kg Net CO2e'] = productivity_metrics.loc['Total Yield (kg)'] / \
+    try:
+        crop_productivity_metrics.loc['Yield per kg CO2 emitted'] = productivity_metrics.loc['Total Yield (kg)'] / \
+                                                                    productivity_metrics.loc['CO2 Emitted (kg CO2e)']
+        crop_productivity_metrics.loc['Yield per kg CO2 mitigated'] = productivity_metrics.loc['Total Yield (kg)'] / \
+                                                                    productivity_metrics.loc['CO2 Mitigated (kg CO2e)']
+
+        crop_productivity_metrics.loc['Yield per kg Net CO2e'] = productivity_metrics.loc['Total Yield (kg)'] / \
                                                              productivity_metrics.loc['Net CO2 (kg CO2e)']
+    except ZeroDivisionError:
+        print("*** ERROR DIVIDING BY ZERO IN calc_crop_productivity_metrics CO2 - FIX ME!!! ***")
+
     return crop_productivity_metrics
 
 

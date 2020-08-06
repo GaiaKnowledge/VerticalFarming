@@ -1,30 +1,72 @@
 import os
+import matplotlib.pyplot as plt
 
-# from overview import get_scenario
-# from overview import get_staff_list
-# from overview import get_calendar
-# from overview import get_gp
-# from overview import calc_capex
-# from overview import build_risk_assessment_counter
-# from overview import calc_best_yield
-# from overview import calc_adjustment_factors
-# from overview import calc_adjusted_yield
-# from overview import calc_waste_adjusted_yield
-# from overview import calc_no_of_plants
-# from overview import calc_produce_sales
-# from overview import calc_vadded_sales
-# from overview import calc_education_rev
-# from overview import calc_tourism_rev
-# from overview import calc_hospitality_rev
-# from overview import calc_grants_rev
-# CHANGE THIS TO DO AN EXPLICIT IMPORTS AS ABOVE
-from vf_overview import *
+from vf_overview import build_bankruptcy_definition
+from vf_overview import build_dataframe
+from vf_overview import build_financial_summary
+from vf_overview import build_risk_assessment_counter
+from vf_overview import build_risk_curves
+from vf_overview import build_risk_dataframe
+from vf_overview import calc_adjusted_yield
+from vf_overview import calc_adjustment_factors
+from vf_overview import calc_avg_photoperiod
+from vf_overview import calc_best_yield
+from vf_overview import calc_capex
+from vf_overview import calc_customer_withdrawal
+from vf_overview import calc_depreciation
+from vf_overview import calc_direct_labour
+from vf_overview import calc_distribution
+from vf_overview import calc_education_rev
+from vf_overview import calc_electricity
+from vf_overview import calc_grants_rev
+from vf_overview import calc_growing_media
+from vf_overview import calc_hospitality_rev
+from vf_overview import calc_improved_light_efficiency
+from vf_overview import calc_insurance
+from vf_overview import calc_loan_repayments
+from vf_overview import calc_nurients_and_num_plants
+from vf_overview import calc_other_costs
+from vf_overview import calc_packaging
+from vf_overview import calc_pathogen_outbreak
+from vf_overview import calc_payback_period
+from vf_overview import calc_pest_outbreak
+from vf_overview import calc_planning_delay
+from vf_overview import calc_power_outage
+from vf_overview import calc_produce_sales
+from vf_overview import calc_productivity_metrics
+from vf_overview import calc_rent
+from vf_overview import calc_repairs
+from vf_overview import calc_roi
+from vf_overview import calc_salaries
+from vf_overview import calc_tourism_rev
+from vf_overview import calc_vadded_sales
+from vf_overview import calc_waste_adjusted_yield
+from vf_overview import calc_water
+from vf_overview import cogs_to_df
+from vf_overview import competitors_risk
+from vf_overview import crop_and_revenue_to_df
+from vf_overview import export_results
+from vf_overview import extra_to_df
+from vf_overview import get_calendar
+from vf_overview import get_gp
+from vf_overview import get_scenario
+from vf_overview import get_staff_list
+from vf_overview import improved_labour_efficiency
+from vf_overview import labour_challenges
+from vf_overview import opex_to_df
+from vf_overview import productivity_targets
+from vf_overview import reduced_product_quality
+from vf_overview import risk_assessment
+from vf_overview import risk_assessment_probability
 
 from vf_equipment import Lights
 
 
 cwd = os.getcwd()  # Get the current working directory (cwd)
 files = os.listdir(cwd)  # Get all the files in that directory
+
+months_in_a_year = 12
+days_in_year = 365.25
 
 years = 15 # Time series length !!UP TO 20!!
 simulations = 20
@@ -41,7 +83,7 @@ Spectra_Blade_Single_Sided_J = Lights('Intravision Spectra Blade Single Sided - 
 scenario = get_scenario()
 ceo, headgrower, marketer, scientist, sales_person, manager, delivery, farmhand, admin, part_time = get_staff_list(scenario)
 end_date, timeseries_monthly, timeseries_yearly = get_calendar(scenario.start_date, years)
-growth_plan = get_gp(scenario)
+growth_plan = get_gp(scenario, days_in_year)
 staff_list = get_staff_list(scenario)
 capex_pilot, capex_full = calc_capex(scenario, growth_plan)
 risk_counter = build_risk_assessment_counter(years)
@@ -79,7 +121,7 @@ loan_repayments, loan_balance = calc_loan_repayments(scenario, years)
 depreciation, life_span = calc_depreciation(scenario, Spectra_Blade_Single_Sided_J, avg_photoperiod, years, days_in_year)
 # Constructing Financial Overview Data Frame
 financial_annual_overview, financial_monthly_overview = build_dataframe(timeseries_yearly, timeseries_monthly)
-financial_annual_overview = crop_and_revenue_to_df(financial_annual_overview, w1, w2, w3, w4, total_sales, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev)
+financial_annual_overview = crop_and_revenue_to_df(financial_annual_overview, weight_adjusted_yields, total_sales, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev)
 financial_annual_overview = cogs_to_df(financial_annual_overview, cogs_labour, cogs_media, cogs_packaging, cogs_seeds_nutrients, cogs_electricity, cogs_water)
 financial_annual_overview = opex_to_df(financial_annual_overview, opex_rent, opex_salaries, opex_other_costs, opex_insurance, opex_distribution)
 financial_annual_overview = extra_to_df(financial_annual_overview, loan_repayments, loan_balance, scenario, depreciation)
@@ -91,8 +133,7 @@ investment_balance, payback_period = calc_payback_period(scenario, financial_ann
 financial_summary = build_financial_summary(financial_annual_overview, investment_balance, roi, timeseries_yearly)
 
 # Productivity Metrics
-
-productivity_metrics = calc_productivity_metrics(scenario, timeseries_yearly, w1, w2, w3, w4, electricity_consumption, direct_labour, water_consumption, staff_list, nutrient_consumption, total_no_of_plants)
+productivity_metrics = calc_productivity_metrics(scenario, timeseries_yearly, weight_adjusted_yields, electricity_consumption, direct_labour, water_consumption, staff_list, nutrient_consumption, total_no_of_plants)
 crop_productivity_metrics = calc_crop_productivity_metrics(productivity_metrics, growth_plan, scenario)
 productivity_targets = productivity_targets(crop_productivity_metrics, scenario)
 
@@ -110,22 +151,20 @@ fig1, ax4 = plt.subplots()
 fig1, ax5 = plt.subplots()
 fig1, ax6 = plt.subplots()
 
-
-
 for s in range(simulations):
      risk_dataframe = build_risk_dataframe(financial_annual_overview)
 
      # Pathogen Outbreak
-     w1_risk, w2_risk, w3_risk, w4_risk = calc_pathogen_outbreak(scenario, years, w1, w2, w3, w4)
+     w1_risk, w2_risk, w3_risk, w4_risk = calc_pathogen_outbreak(scenario, years, weight_adjusted_yields)
      w1_risk, w2_risk, w3_risk, w4_risk = calc_pest_outbreak(scenario, years, w1_risk, w2_risk, w3_risk, w4_risk)
      w1_risk, w2_risk, w3_risk, w4_risk = calc_power_outage(scenario, years, w1_risk, w2_risk, w3_risk, w4_risk)
-     scrop1, scrop2, scrop3, scrop4, total_sales_risk = calc_produce_sales(w1_risk, w2_risk, w3_risk, w4_risk, scenario)
+     _, total_sales_risk = calc_produce_sales([w1_risk, w2_risk, w3_risk, w4_risk], scenario)
      customer_withdrawal = calc_customer_withdrawal(scenario, years, total_sales_risk)
      repair = calc_repairs(scenario, years)
      labour_damage, labour_extra_cost = labour_challenges(scenario, years, total_sales_risk, cogs_labour)
      cogs_electricity, electricity_consumption = calc_improved_light_efficiency(scenario, years, growth_plan, avg_photoperiod, Spectra_Blade_Single_Sided_J, life_span, electricity_consumption, days_in_year)
      # Recomposing Dataframe
-     risk_dataframe = crop_and_revenue_to_df(risk_dataframe, w1_risk, w2_risk, w3_risk, w4_risk, total_sales_risk, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev)
+     risk_dataframe = crop_and_revenue_to_df(risk_dataframe, [w1_risk, w2_risk, w3_risk, w4_risk], total_sales_risk, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev)
      risk_dataframe.loc['Revenue - Crop Sales'] -= customer_withdrawal
      #risk_dataframe.loc['Revenue - Crop Sales'] -= labour_damage
 
@@ -195,6 +234,7 @@ ax4.legend()
 ax5.set_xlabel('Year')
 ax5.set_ylabel('Repairs (£)')
 ax5.set_title('Repair Costs')
+
 
 # RADAR CHART
 # number of variable
