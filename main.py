@@ -1,5 +1,7 @@
 import os
 import matplotlib.pyplot as plt
+import pba
+from math import pi
 
 from vf_overview import build_bankruptcy_definition
 from vf_overview import build_dataframe
@@ -25,7 +27,7 @@ from vf_overview import calc_hospitality_rev
 from vf_overview import calc_improved_light_efficiency
 from vf_overview import calc_insurance
 from vf_overview import calc_loan_repayments
-from vf_overview import calc_nurients_and_num_plants
+from vf_overview import calc_nutrients_and_num_plants
 from vf_overview import calc_other_costs
 from vf_overview import calc_packaging
 from vf_overview import calc_pathogen_outbreak
@@ -38,6 +40,7 @@ from vf_overview import calc_productivity_metrics
 from vf_overview import calc_rent
 from vf_overview import calc_repairs
 from vf_overview import calc_roi
+from vf_overview import calc_financial_balance
 from vf_overview import calc_salaries
 from vf_overview import calc_tourism_rev
 from vf_overview import calc_vadded_sales
@@ -60,13 +63,14 @@ from vf_overview import reduced_product_quality
 from vf_overview import risk_assessment
 from vf_overview import risk_assessment_probability
 from vf_equipment import Lights
+from vf_overview import plot_radar_chart
 
 
 cwd = os.getcwd()  # Get the current working directory (cwd)
 files = os.listdir(cwd)  # Get all the files in that directory
 
 years = 15 # Time series length !!UP TO 20!!
-simulations = 20
+simulations = 10
 
 #Equipment
 Spectra_Blade_Single_Sided_J = Lights('Intravision Spectra Blade Single Sided - J', 'LED', 'Spectra J', 160,
@@ -91,18 +95,20 @@ risk_counter = build_risk_assessment_counter(years)
 crop_yields = calc_best_yield(scenario, growth_plan, years)
 light_factor, temp_factor, nutrient_factor, co2_factor = calc_adjustment_factors(scenario)
 adjusted_yields = calc_adjusted_yield(crop_yields, light_factor, temp_factor, nutrient_factor, co2_factor)
-weight_adjusted_yields = calc_waste_adjusted_yield(scenario, adjusted_yields, years)
-crop_sales, total_sales = calc_produce_sales(weight_adjusted_yields, scenario)
+waste_adjusted_yields = calc_waste_adjusted_yield(scenario, adjusted_yields, years)
+crop_sales, total_sales = calc_produce_sales(waste_adjusted_yields, scenario)
 vadded_sales = calc_vadded_sales(scenario, years)
 education_rev = calc_education_rev(scenario, years)
 tourism_rev = calc_tourism_rev(scenario, years)
 hospitality_rev = calc_hospitality_rev(scenario, years)
 grants_rev = calc_grants_rev(years)
+grants_rev[1] = 89000 # How can we factor this into inputs for example?
+
 
 cogs_labour, direct_labour = calc_direct_labour(farmhand, delivery, part_time, years, scenario)
 cogs_media = calc_growing_media(total_sales)
-cogs_packaging = calc_packaging(scenario, years, weight_adjusted_yields)
-cogs_seeds_nutrients, nutrient_consumption, total_no_of_plants = calc_nurients_and_num_plants(scenario, weight_adjusted_yields)
+cogs_packaging = calc_packaging(scenario, years, waste_adjusted_yields)
+cogs_seeds_nutrients, nutrient_consumption, total_no_of_plants = calc_nutrients_and_num_plants(scenario, waste_adjusted_yields)
 avg_photoperiod = calc_avg_photoperiod(scenario)
 cogs_electricity, electricity_consumption = calc_electricity(scenario, growth_plan, avg_photoperiod, Spectra_Blade_Single_Sided_J, years)
 cogs_water, water_consumption = calc_water(scenario, years)
@@ -117,7 +123,7 @@ loan_repayments, loan_balance = calc_loan_repayments(scenario, years)
 depreciation, life_span = calc_depreciation(scenario, Spectra_Blade_Single_Sided_J, avg_photoperiod, years)
 # Constructing Financial Overview Data Frame
 financial_annual_overview, financial_monthly_overview = build_dataframe(timeseries_yearly, timeseries_monthly)
-financial_annual_overview = crop_and_revenue_to_df(financial_annual_overview, weight_adjusted_yields, total_sales, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev)
+financial_annual_overview = crop_and_revenue_to_df(financial_annual_overview, waste_adjusted_yields, total_sales, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev)
 financial_annual_overview = cogs_to_df(financial_annual_overview, cogs_labour, cogs_media, cogs_packaging, cogs_seeds_nutrients, cogs_electricity, cogs_water)
 financial_annual_overview = opex_to_df(financial_annual_overview, opex_rent, opex_salaries, opex_other_costs, opex_insurance, opex_distribution)
 financial_annual_overview = extra_to_df(financial_annual_overview, loan_repayments, loan_balance, scenario, depreciation)
@@ -125,13 +131,15 @@ financial_annual_overview = extra_to_df(financial_annual_overview, loan_repaymen
 roi = calc_roi(scenario, financial_annual_overview, years)
 financial_annual_overview.loc['Return on Investment'] = roi
 investment_balance, payback_period = calc_payback_period(scenario, financial_annual_overview, years)
+financial_annual_overview, financial_balance = calc_financial_balance(financial_annual_overview, scenario, years)
 
 financial_summary = build_financial_summary(financial_annual_overview, investment_balance, roi, timeseries_yearly)
 
 # Productivity Metrics
-productivity_metrics = calc_productivity_metrics(scenario, timeseries_yearly, weight_adjusted_yields, electricity_consumption, direct_labour, water_consumption, staff_list, nutrient_consumption, total_no_of_plants)
+productivity_metrics = calc_productivity_metrics(scenario, timeseries_yearly, waste_adjusted_yields, electricity_consumption, direct_labour, water_consumption, staff_list, nutrient_consumption, total_no_of_plants)
 crop_productivity_metrics = calc_crop_productivity_metrics(productivity_metrics, growth_plan, scenario)
 productivity_targets = productivity_targets(crop_productivity_metrics, scenario)
+print(crop_productivity_metrics)
 
 # Where it gets risky
 critical_risk, substantial_risk, moderate_risk = build_risk_curves(years)
@@ -151,16 +159,16 @@ for s in range(simulations):
      risk_dataframe = build_risk_dataframe(financial_annual_overview)
 
      # Pathogen Outbreak
-     w1_risk, w2_risk, w3_risk, w4_risk = calc_pathogen_outbreak(scenario, years, weight_adjusted_yields)
-     w1_risk, w2_risk, w3_risk, w4_risk = calc_pest_outbreak(scenario, years, w1_risk, w2_risk, w3_risk, w4_risk)
-     w1_risk, w2_risk, w3_risk, w4_risk = calc_power_outage(scenario, years, w1_risk, w2_risk, w3_risk, w4_risk)
-     _, total_sales_risk = calc_produce_sales([w1_risk, w2_risk, w3_risk, w4_risk], scenario)
+     w_risks = calc_pathogen_outbreak(scenario, years, waste_adjusted_yields)
+     w_risks = calc_pest_outbreak(scenario, years, w_risks)
+     #w_risks = calc_power_outage(scenario, years, w_risks)
+     _, total_sales_risk = calc_produce_sales(w_risks, scenario)
      customer_withdrawal = calc_customer_withdrawal(scenario, years, total_sales_risk)
      repair = calc_repairs(scenario, years)
      labour_damage, labour_extra_cost = labour_challenges(scenario, years, total_sales_risk, cogs_labour)
      cogs_electricity, electricity_consumption = calc_improved_light_efficiency(scenario, years, growth_plan, avg_photoperiod, Spectra_Blade_Single_Sided_J, life_span, electricity_consumption)
      # Recomposing Dataframe
-     risk_dataframe = crop_and_revenue_to_df(risk_dataframe, [w1_risk, w2_risk, w3_risk, w4_risk], total_sales_risk, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev)
+     risk_dataframe = crop_and_revenue_to_df(risk_dataframe, w_risks, total_sales_risk, vadded_sales, education_rev, tourism_rev, hospitality_rev, grants_rev)
      risk_dataframe.loc['Revenue - Crop Sales'] -= customer_withdrawal
      #risk_dataframe.loc['Revenue - Crop Sales'] -= labour_damage
 
@@ -180,7 +188,8 @@ for s in range(simulations):
      # ROI
      roi_risk = calc_roi(scenario, risk_dataframe, years)
      risk_dataframe.loc['Return on Investment'] = roi_risk
-     risk_counter = risk_assessment(roi_risk, bankruptcy_definition, years, risk_counter)
+     risk_dataframe, risk_financial_balance = calc_financial_balance(risk_dataframe, scenario, years)
+     risk_counter = risk_assessment(roi_risk, risk_financial_balance, bankruptcy_definition, years, risk_counter)
 
      # COMMENT OUT IF NOT INTERESTED IN RISK PLOTS
      ax2.plot(risk_dataframe.columns, roi_risk)
@@ -189,7 +198,6 @@ for s in range(simulations):
 
 risk_assessment_probability = risk_assessment_probability(risk_counter, years, simulations)
 export_results(financial_annual_overview, financial_summary, risk_dataframe)
-
 
 ax1.plot(financial_annual_overview.columns, financial_annual_overview.loc['Total Revenue'], label='Revenue')
 ax1.plot(financial_annual_overview.columns, financial_annual_overview.loc['Total COGS'], label='COGS')
@@ -231,49 +239,12 @@ ax5.set_xlabel('Year')
 ax5.set_ylabel('Repairs (£)')
 ax5.set_title('Repair Costs')
 
-
-# RADAR CHART
-# number of variable
-categories = list(productivity_targets)[1:]
-N = len(categories)
-
-# We are going to plot the first line of the data frame.
-# But we need to repeat the first value to close the circular graph:
-values = productivity_targets.loc[0].drop('metric').values.flatten().tolist()
-values += values[:1]
-
-values2 = productivity_targets.loc[1].drop('metric').values.flatten().tolist()
-values2 += values2[:1]
-
-
-# What will be the angle of each axis in the plot? (we divide the plot / number of variable)
-angles = [n / float(N) * 2 * pi for n in range(N)]
-angles += angles[:1]
-
-# Initialise the spider plot
-ax6 = plt.subplot(111, polar=True)
-
-# Draw one axe per variable + add labels labels yet
-plt.xticks(angles[:-1], categories, color='grey', size=8)
-
-# Draw ylabels
-ax6.set_rlabel_position(0)
-plt.yticks([-1, 0.5, 0, 0.5, 1, 1.5], ["-1", "-0.5", "0", "0.5","1", "1.5"], color="grey", size=7)
-ax6.set_ylim(-1, 1.5)
-
-# Plot data
-ax6.plot(angles, values, linewidth=1, linestyle='solid', label='Crop Productivity')
-ax6.plot(angles, values2, linewidth=1, linestyle='solid', label='Target')
-
-
-# Fill area
-ax6.fill(angles, values, 'b', alpha=0.1)
-ax6.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=2)
+ax6 = plot_radar_chart(productivity_targets, ax6)
 
 plt.show()
 
 print (scenario.start_date.strftime('The simulation computes from %d, %b, %Y'), end_date.strftime('until %d, %b, %Y'))      # format_str = "%B %d, %Y"')
-print('The farm is growing Crop1: {}, Crop2 :{}, Crop3: {} and Crop 4:{}'.format(scenario.crop_typ1, scenario.crop_typ2, scenario.crop_typ3, scenario.crop_typ4))
+#print('The farm is growing Crop1: {}, Crop2 :{}, Crop3: {} and Crop 4:{}'.format(scenario.crop_typ1, scenario.crop_typ2, scenario.crop_typ3, scenario.crop_typ4))
 print('Estimated capital expenditure for full-scale farm is: £{}'.format(capex_full))
 print(financial_annual_overview)
 print(payback_period)

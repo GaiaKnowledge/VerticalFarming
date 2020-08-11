@@ -1,0 +1,60 @@
+
+depxy = list('circle', 0.4)
+depxz = list('doughnut', 0.3, 0.5)
+
+many = 100000
+some = 10000
+par(mfrow=c(3,3))
+
+scale = c(0,1)
+x = runif(many)
+y = runif(many)
+z = runif(many)
+Z = x + y
+
+dep = function(x, y, how, check=FALSE) {
+  d = function(x,y,x0=0.5,y0=0.5) sqrt((x-x0)^2 + (y-y0)^2)
+  r = d(x,y)
+  if (how[1] == 'frechet')   xy = rep(TRUE,length(x))  
+  if (how[1] == 'circle')    xy = r <= how[2]
+  if (how[1] == 'doughnut')  xy = (how[2] <= r) & (r <= how[3])
+  if (how[1] == 'Acircle')   xy = r > how[2]
+  if (how[1] == 'Adoughnut') xy = (how[2] > r) | (r > how[3])
+  if (how[1] == 'perfect')   xy = abs(x - y) < how[2]
+  if (check) if ((diff(range(x[xy]))/diff(range(x))) < 0.98) cat(paste(how[1],'dependence does not span the interval\n'))
+  return(xy)
+  }  
+
+xy = dep(x,y,depxy,TRUE)
+
+xz = dep(x,z,depxz,TRUE)
+xyz = xy & xz 
+
+xZ = dep(x,Z,depxz)
+xyZ = xy & xZ
+
+showem = function(x,y,xlim=scale,ylim=scale,col='black',new=TRUE) {
+  L = function(n) substr(s[n],1,nchar(s[n])-2); s = sys.calls()[[1]]; s = c(deparse(s[2]),deparse(s[3]));
+  if (new) plot(head(x,some),head(y,some),xlim=xlim,ylim=ylim,col=col,xlab=L(1),ylab=L(2)) else points(head(x,some),head(y,some),col=col)
+  }
+
+showem(x[xy], y[xy]);    showem(x[xy], y[xy],  col='red', new=FALSE)
+showem(x[xz], z[xz]);    showem(x[xZ], Z[xZ],  col='red', new=FALSE)
+showem(y[xyz],z[xyz]);   showem(y[xyZ],Z[xyZ], col='red', new=FALSE)
+
+showem(x[xyz],y[xyz]);   showem(x[xyZ],y[xyZ], col='red', new=FALSE)
+showem(x[xyz],z[xyz]);   showem(x[xyZ],Z[xyZ], col='red', new=FALSE)
+showem(y[xyz],z[xyz]);   showem(y[xyZ],Z[xyZ], col='red', new=FALSE)
+
+
+install.packages("scatterplot3d") 
+library("scatterplot3d") 
+
+colors = c(rep(1,length(x[xyz])), rep(2,length(x[xyZ])))
+x_xyz = c(x[xyz], x[xyZ])
+y_xyz = c(y[xyz], y[xyZ])
+z_xyz = c(z[xyz], Z[xyZ])
+scatterplot3d(x_xyz,y_xyz,z_xyz,color=colors)
+scatterplot3d(y_xyz,z_xyz,x_xyz,color=colors)
+scatterplot3d(x_xyz,z_xyz,y_xyz,color=colors)
+

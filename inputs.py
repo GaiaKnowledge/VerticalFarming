@@ -54,10 +54,10 @@ class Scenario(object):
         # Crop and System Selection 1
         self.crop_parameters = []
         # THE BELOW NEED TO BE FIXED - SEE calc_power_outage
-        self.crop1_system = 'Aeroponics'
-        self.crop2_system = 'Aeroponics'
-        self.crop3_system = 'Aeroponics'
-        self.crop4_system = 'Aeroponics'
+        self.crop1_system = None
+        self.crop2_system = None
+        self.crop3_system = None
+        self.crop4_system = None
         # self.crop_typ1 = None
         # self.crop1_percent = None
         # self.crop1_system = None
