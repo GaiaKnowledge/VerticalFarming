@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 
 class Crops(object):
     def __init__(self, plant, ppfd, par, photoperiod, harvest_cycle, dry_mass, dm_fm, nft, drip,
@@ -120,3 +121,33 @@ class Crops(object):
         # watermelon_mini = Crops('watermelon - mini	350	15.1	12	85	0.96	0.08	-	-	-	-	-	4.504708706	4.504708706	2.252126866	198	12	549	1.2	0.6	0.3	0.0063	0.33	34.7
         # watermelon_standard = Crops('watermelon - standard	0	0	12	85	0	0	-	-	-	-	-	7.770065174	7.770065174	3.885032587	0	0	0	0	0	0	0	0	0
         return
+
+
+@dataclass(init=False)
+class CropParameters:
+    type: str
+    percent: float
+    system: str
+    harvest_weight: float
+    product_weight: float
+    customer_percent: float
+    price1: float
+    price2: float
+
+    def __init__(self):
+        pass
+
+
+def get_crop(crop_type):
+    crop = None
+    if crop_type == 'Basil - Lemon':
+        crop = Crops('Basil - Lemon', 'n/a',	'n/a',	14,	42,	'n/a', 'n/a', 'n/a', 13.067,	'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 0.03, 0.97, 'herbs')
+    elif crop_type == 'Lettuce (Farm Urban Mix)':
+        crop = Crops('Lettuce (Farm Urban Mix)',	0,	0,	16,	35,	0,	0,	0,	33,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0.03, 0.97, 'leafy greens')
+    elif crop_type == 'Basil - Genovese':
+        crop = Crops('Basil - Genovese',	0,	0,	14,	42,	0,	0,	34.33833756,	9.802857143,	35.67186965,	33.33830224,	33.33830224, 0,	0,	16.66892363,	0,	0,	0,	0,	0,	0,	0,	0,	0.03, 0.97, 'herbs')
+    elif crop_type == 'None':
+        crop = Crops('none',	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0, 1, 'n/a')
+    else:
+        raise RuntimeError(f"Unknown crop: {crop_type}")
+    return crop
