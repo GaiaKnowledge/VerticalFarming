@@ -52,46 +52,21 @@ class Scenario(object):
         self.loan_type = None
 
         # Crop and System Selection 1
-        self.crop_typ1 = None
-        self.crop1_percent = None
+        self.crop_parameters = []
+        # THE BELOW NEED TO BE FIXED - SEE calc_power_outage
         self.crop1_system = None
-        self.crop1_harvest_weight = None
-        self.crop1_product_weight = None
-        self.crop1_customer_percent = None
-        self.crop1_price1 = None
-        self.crop1_price2 = None
-
-        # Crop and System Selection 2
-
-        self.crop_typ2 = None
-        self.crop2_percent = None
         self.crop2_system = None
-        self.crop2_harvest_weight = None
-        self.crop2_product_weight = None
-        self.crop2_customer_percent = None
-        self.crop2_price1 = None
-        self.crop2_price2 = None
-
-        # Crop and System Selection 3
-
-        self.crop_typ3 = None
-        self.crop3_percent = None
         self.crop3_system = None
-        self.crop3_harvest_weight = None
-        self.crop3_product_weight = None
-        self.crop3_customer_percent = None
-        self.crop3_price1 = None
-        self.crop3_price2 = None
-
-        # Crop and System Selection 4
-        self.crop_typ4 = None
-        self.crop4_percent = None
         self.crop4_system = None
-        self.crop4_harvest_weight = None
-        self.crop4_product_weight = None
-        self.crop4_customer_percent = None
-        self.crop4_price1 = None
-        self.crop4_price2 = None
+        # self.crop_typ1 = None
+        # self.crop1_percent = None
+        # self.crop1_system = None
+        # self.crop1_harvest_weight = None
+        # self.crop1_product_weight = None
+        # self.crop1_customer_percent = None
+        # self.crop1_price1 = None
+        # self.crop1_price2 = None
+
 
 # Growth Multiplier
         self.vadded_products_multiplier = None
