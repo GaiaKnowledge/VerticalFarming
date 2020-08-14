@@ -34,7 +34,7 @@ class Scenario(object):
         self.light_system = None
         self.growing_media = None
         self.ceiling_height = None
-        self.insultation_level = None
+        self.insulation_level = None
         self.roof_type = None
         self.co2_enrichment = None
         self.structure_type = None
