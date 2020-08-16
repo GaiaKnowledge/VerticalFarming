@@ -83,7 +83,9 @@ def build_bankruptcy_definition(years):
         elif y > 7:
             bankruptcy_definition.append(10)
 
-    return bankruptcy_definition
+    balance_threshold = 0
+
+    return bankruptcy_definition, balance_threshold
 
 
     return bankruptcy_definition
@@ -103,7 +105,7 @@ def build_risk_assessment_counter(years):
         risk_counter.append(0)
     return risk_counter
 
-def risk_assessment(roi, financial_balance, bankruptcy_definition, years, risk_counter):
+def risk_assessment(roi, financial_balance, bankruptcy_definition, balance_threshold, years, risk_counter):
     """Risk Assessment of Bankruptcy Calculation
 
         Args:
@@ -122,7 +124,7 @@ def risk_assessment(roi, financial_balance, bankruptcy_definition, years, risk_c
 
     for y in range(years+1):
 
-        if roi[y] < bankruptcy_definition[y] and financial_balance[y] < 0:
+        if roi[y] < bankruptcy_definition[y] and financial_balance[y] < balance_threshold:
             risk_counter[y] += 1
         else:
             risk_counter[y] += 0
@@ -657,7 +659,7 @@ def calc_percent_annual_decline(df, percent_list):
     balance_change = df.iloc[32, -1] - df.iloc[32, 0]
     balance_annual_percent_change = (balance_change/df.iloc[32, 0]) * 100
 
-    rounded_percent_change = int(math.ceil(balance_annual_percent_change/50.0)) * 50
+    rounded_percent_change = int(math.ceil(balance_annual_percent_change/100.0)) * 100
 
     percent_list.append(rounded_percent_change)
 
@@ -674,7 +676,7 @@ def calc_percent_annual_decline(df, percent_list):
 
 def build_counter(thresholds):
 
-    counter =  [0] * len(np.arange(-500, 510, thresholds))
+    counter =  [0] * thresholds
     return counter
 
 def calc_probability_of_decline(percent_list, simulations):   # decline_counter):
@@ -697,34 +699,6 @@ def calc_probability_of_decline(percent_list, simulations):   # decline_counter)
     percent_df.loc['pdf'] = probability
     percent_df.loc['cdf'] = data_cdf
 
-
-    #bins = list(np.arange(-500, 525, 25))
-
-
-    #df_probability_of_change = pd.DataFrame({'percent': percent_annual_list})
-    #df_probability_of_change['bins'] = pd.cut(x=['percent_list'], bins=bins)
-
-
-    # Round up to ten
-
-
-    #
-    # rounded_percent_change = int(math.ceil(balance_annual_percent_change/50.0)) * 50
-    #
-    # list_loc = int(rounded_percent_change/50)
-    # print(list_loc)
-    #
-    #
-    #
-    # if 0 <= rounded_percent_change <= 500:
-    #     decline_counter[list_loc+25] += 1
-    # elif rounded_percent_change > 500:
-    #     decline_counter[-1] += 1
-    # elif 0 > rounded_percent_change >= (-500):
-    #     decline_counter[-list_loc] += 1
-    # else:
-    #     decline_counter[0] += 1
-
     return percent_df
 
 def decline_data(decline_counter, simulations):
@@ -743,7 +717,7 @@ def decline_data(decline_counter, simulations):
 
     return decline_dataframe
 
-def cdf_bankruptcy_counter(bankruptcy_definition, cdf_counter, roi, financial_balance, years, timeseries_yearly):
+def cdf_bankruptcy_counter(bankruptcy_definition, cdf_counter, roi, financial_balance, years):
     """Risk Assessment Cumulative Distributon Function of Bankruptcy out of X Simulations for Y Years
 
         Args:
@@ -763,6 +737,46 @@ def cdf_bankruptcy_counter(bankruptcy_definition, cdf_counter, roi, financial_ba
             cdf_counter[y] += 0
 
     return cdf_counter
+
+
+def threshold_probability(threshold_counter, roi, financial_balance, bankruptcy_definition, balance_threshold):
+
+    bankruptcy_definition =[]
+    balance_threshold += 200000
+    increments = balance_threshold/5
+
+    financial_balance_thresholds = list(np.arange(-balance_threshold, balance_threshold+increments, increments))
+
+
+    for t in range(10):
+        if min(financial_balance) < financial_balance_thresholds[t]:
+            threshold_counter[t] += 1
+            break
+
+    thresholds_axis = financial_balance_thresholds
+
+    # for y in range(years+1):
+    #     # Threshold for bankruptcy
+    #     if y <= 7:
+    #         bankruptcy_definition.append(y*2.8571 - 10) # Year 0 - below 10% ROI, Year 7 - 10% ROI
+    #     elif y > 7:
+    #         bankruptcy_definition.append(10)
+
+    # financial_balance_threshold =[]
+
+    return threshold_counter, thresholds_axis
+
+def probability_df(counter, simulations, columns):
+
+    pdf_data = [i / simulations for i in counter]
+    cdf_data = np.cumsum(pdf_data)
+
+    df = pd.DataFrame(index=['pdf', 'cdf'], columns=columns)
+    df.loc['pdf'] = pdf_data
+    df.loc['cdf'] = cdf_data
+
+    return df
+
 
 
     # def build_risk_dataframe(financial_annual_overview):

@@ -5,6 +5,8 @@ import pba
 from math import pi
 
 from risk import build_bankruptcy_definition
+from risk import threshold_probability
+from risk import probability_df
 from vf_overview import build_dataframe
 from vf_overview import build_financial_summary
 from risk import build_risk_assessment_counter
@@ -75,7 +77,7 @@ cwd = os.getcwd()  # Get the current working directory (cwd)
 files = os.listdir(cwd)  # Get all the files in that directory
 
 years = 15 # Time series length !!UP TO 20!!
-simulations = 200
+simulations = 100
 initial_capital = 10000
 percent_list = []
 
@@ -95,8 +97,10 @@ growth_plan = get_gp(scenario)
 staff_list = get_staff_list(scenario)
 capex_pilot, capex_full = calc_capex(scenario, growth_plan)
 risk_counter = build_risk_assessment_counter(years)
-decline_counter = build_counter(thresholds=50)
 cdf_counter = build_risk_assessment_counter(years)
+threshold_counter = build_counter(thresholds=11)
+
+scenario.currency = '£'
 
 #scenario.electricity_price = pba.norm(0.6, 0.1)
 
@@ -151,7 +155,7 @@ productivity_targets = productivity_targets(crop_productivity_metrics, scenario)
 
 # Where it gets risky
 critical_risk, substantial_risk, moderate_risk = build_risk_curves(years)
-bankruptcy_definition = build_bankruptcy_definition(years)
+bankruptcy_definition, balance_threshold = build_bankruptcy_definition(years)
 risk_dataframe = build_risk_dataframe(financial_annual_overview)
 
 
@@ -206,14 +210,16 @@ for s in range(simulations):
     roi_risk = calc_roi(scenario, risk_dataframe, years)
     risk_dataframe.loc['Return on Investment'] = roi_risk
     risk_dataframe, risk_financial_balance = calc_financial_balance(risk_dataframe, scenario, years, initial_capital)
-    risk_counter = risk_assessment(roi_risk, risk_financial_balance, bankruptcy_definition, years, risk_counter)
+    risk_counter = risk_assessment(roi_risk, risk_financial_balance, bankruptcy_definition, balance_threshold, years, risk_counter)
 
          # Rate of Decline
     percent_list = calc_percent_annual_decline(risk_dataframe, percent_list)
-    #probability_of_decline, list_loc  = calc_probability_of_decline(balance_annual_percent_change, decline_counter)
 
     # CDF Bankruptcy
-    cdf_counter = cdf_bankruptcy_counter(bankruptcy_definition, cdf_counter, roi_risk, financial_balance, years, timeseries_yearly)
+    cdf_counter = cdf_bankruptcy_counter(bankruptcy_definition, cdf_counter, roi_risk, risk_financial_balance, years)
+
+    # CDF Threshold
+    threshold_counter, thresholds_axis = threshold_probability(threshold_counter, roi, risk_financial_balance, bankruptcy_definition, balance_threshold)
 
          # COMMENT OUT IF NOT INTERESTED IN RISK PLOTS
     fig1, ax2.plot(risk_dataframe.columns, roi_risk)
@@ -222,8 +228,8 @@ for s in range(simulations):
 
 first_passage_df = risk_assessment_probability(cdf_counter, years, simulations, timeseries_yearly)
 risk_assessment_probability_df = risk_assessment_probability(risk_counter, years, simulations, timeseries_yearly)
-decline_dataframe = decline_data(decline_counter, simulations)
 percent_df = calc_probability_of_decline(percent_list, simulations)
+threshold_df = probability_df(threshold_counter, simulations, thresholds_axis)
 export_results(financial_annual_overview, financial_summary, risk_dataframe)
 
 # Financial Overivew
@@ -271,7 +277,7 @@ fig1, ax4.set_xlabel('Year')
 fig1, ax4.set_ylabel('Financial Balance')
 
 # ax8.plot(percent_decline, probability_of_decline)
-fig2, ax8.set_title('')
+fig2, ax8.set_title('Percent Financial Balance Change after {} years'.format(years))
 fig2, ax8.plot(percent_df.columns, percent_df.loc['pdf'], linewidth=2, color='red', label='PDF')
 fig2, ax8.plot(percent_df.columns, percent_df.loc['cdf'], linewidth=2, color='blue', label='CDF')
 fig2, ax8.set_xlabel('Percent Balance Change (%)')
@@ -280,9 +286,12 @@ fig2, ax8.set_ylabel('Probability of Change')
 fig2, ax8.set_ylim(0, 1)
 fig2, ax8.legend()
 
-fig2, ax9.set_xlabel('Threshold Financial Balance (£)')
+fig2, ax9.plot(threshold_df.columns, threshold_df.loc['pdf'], linewidth=2, color='red', label='PDF')
+fig2, ax9.plot(threshold_df.columns, threshold_df.loc['cdf'], linewidth=2, color='blue', label='CDF')
+fig2, ax9.set_xlabel('Threshold Financial Balance ({})'.format(scenario.currency))
 fig2, ax9.set_ylabel('Probability of Bankruptcy after {} years'.format(years))
 fig2, ax9.plot()
+fig2, ax9.legend()
 
 fig2, ax10.set_title('First Passage Time Risk')
 fig2, ax10.set_xlabel('Year')
