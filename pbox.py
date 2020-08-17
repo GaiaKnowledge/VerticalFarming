@@ -725,3 +725,33 @@ def straddlingzero(x):
 
 def env(x,y):
     return x.env(y)
+
+def pnt(a):
+    if type(a) == pba.pbox.Pbox:
+        return (a.mean_left + a.mean_right) / 2
+    elif type(a) == list:
+        return [pnt(b) for b in a]
+    else:
+        return (a)
+
+
+def rng(a):
+    if type(a) == pba.pbox.Pbox:
+        # return pba.Interval(a.mean_left, a.mean_right)
+        # return pba.Interval(a.mean_left-np.sqrt(a.var_right),
+        #                    a.mean_right+np.sqrt(a.var_right))
+        return a.get_interval(0.025, 0.975)
+    elif type(a) == list:
+        return [pnt(b) for b in a]
+    else:
+        return (a)
+
+def pltem(ax, t, y, simple=True):
+    if simple:
+        y = [rng(v) for v in y]
+        y1 = [v.left() for v in y]
+        y2 = [v.right() for v in y]
+        ax.plot(t, y1)
+        ax.plot(t, y2)
+    else:
+        pass

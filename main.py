@@ -4,20 +4,19 @@ import math
 import pba
 from math import pi
 
-from risk import build_bankruptcy_definition
-from risk import threshold_probability
-from risk import probability_df
+import os
+import matplotlib.pyplot as plt
+import math
+import pba
+from math import pi
+
 from vf_overview import build_dataframe
 from vf_overview import build_financial_summary
-from risk import build_risk_assessment_counter
-from risk import build_risk_curves
-from risk import build_risk_dataframe
 from vf_overview import calc_adjusted_yield
 from vf_overview import calc_adjustment_factors
 from vf_overview import calc_avg_photoperiod
 from vf_overview import calc_best_yield
 from vf_overview import calc_capex
-from risk import calc_customer_withdrawal
 from vf_overview import calc_crop_productivity_metrics
 from vf_overview import calc_depreciation
 from vf_overview import calc_direct_labour
@@ -27,21 +26,15 @@ from vf_overview import calc_electricity
 from vf_overview import calc_grants_rev
 from vf_overview import calc_growing_media
 from vf_overview import calc_hospitality_rev
-from risk import calc_improved_light_efficiency
 from vf_overview import calc_insurance
 from vf_overview import calc_loan_repayments
 from vf_overview import calc_nutrients_and_num_plants
 from vf_overview import calc_other_costs
 from vf_overview import calc_packaging
-from risk import calc_pathogen_outbreak
 from vf_overview import calc_payback_period
-from risk import calc_pest_outbreak
-from risk import calc_planning_delay
-from risk import calc_power_outage
 from vf_overview import calc_produce_sales
 from vf_overview import calc_productivity_metrics
 from vf_overview import calc_rent
-from risk import calc_repairs
 from vf_overview import calc_roi
 from vf_overview import calc_financial_balance
 from vf_overview import calc_salaries
@@ -50,7 +43,6 @@ from vf_overview import calc_vadded_sales
 from vf_overview import calc_waste_adjusted_yield
 from vf_overview import calc_water
 from vf_overview import cogs_to_df
-from risk import competitors_risk
 from vf_overview import crop_and_revenue_to_df
 from vf_overview import export_results
 from vf_overview import extra_to_df
@@ -58,20 +50,38 @@ from vf_overview import get_calendar
 from vf_overview import get_gp
 from vf_overview import get_scenario
 from vf_overview import get_staff_list
-from risk import improved_labour_efficiency
-from risk import labour_challenges
 from vf_overview import opex_to_df
 from vf_overview import productivity_targets
-from risk import reduced_product_quality
-from risk import risk_assessment
-from risk import risk_assessment_probability
-from vf_equipment import Lights
 from vf_overview import plot_radar_chart
+
+from vf_equipment import Lights
+from vf_equipment import System
+
+from risk import build_risk_assessment_counter
+from risk import build_risk_curves
+from risk import build_risk_dataframe
+from risk import calc_customer_withdrawal
+from risk import calc_improved_light_efficiency
+from risk import calc_pathogen_outbreak
+from risk import calc_repairs
+from risk import calc_pest_outbreak
+from risk import calc_planning_delay
+from risk import calc_power_outage
+from risk import competitors_risk
+from risk import labour_challenges
 from risk import build_counter
 from risk import calc_percent_annual_decline
 from risk import calc_probability_of_decline
 from risk import decline_data
 from risk import cdf_bankruptcy_counter
+from risk import build_bankruptcy_definition
+from risk import threshold_probability
+from risk import probability_df
+from risk import reduced_product_quality
+from risk import risk_assessment
+from risk import risk_assessment_probability
+from risk import improved_labour_efficiency
+from risk import labour_challenges
 
 cwd = os.getcwd()  # Get the current working directory (cwd)
 files = os.listdir(cwd)  # Get all the files in that directory
