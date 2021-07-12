@@ -39,8 +39,8 @@ dists = {
     'fisk' : sps.fisk,
     'foldcauchy' : sps.foldcauchy,
     'foldnorm' : sps.foldnorm,
-    'frechet_r' : sps.frechet_r,
-    'frechet_l' : sps.frechet_l,
+    # 'frechet_r' : sps.frechet_r,
+    # 'frechet_l' : sps.frechet_l,
     'genlogistic' : sps.genlogistic,
     'gennorm' : sps.gennorm,
     'genpareto' : sps.genpareto,
@@ -734,43 +734,43 @@ def foldnorm(mu,s, steps = 200):
           var_right  = var.right()
           )
 
-def frechet_r(*args, steps = 200):
-    args = list(args)
-    for i in range(0,len(args)):
-        if args[i].__class__.__name__ != 'Interval':
-            args[i] = Interval(args[i])
+# def frechet_r(*args, steps = 200):
+#     args = list(args)
+#     for i in range(0,len(args)):
+#         if args[i].__class__.__name__ != 'Interval':
+#             args[i] = Interval(args[i])
 
-    Left, Right, mean, var = __get_bounds('frechet_r',steps,*args)
+#     Left, Right, mean, var = __get_bounds('frechet_r',steps,*args)
 
-    return Pbox(
-          Left,
-          Right,
-          steps      = steps,
-          shape      = 'frechet_r',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
-          )
+#     return Pbox(
+#           Left,
+#           Right,
+#           steps      = steps,
+#           shape      = 'frechet_r',
+#           mean_left  = mean.left(),
+#           mean_right = mean.right(),
+#           var_left   = var.left(),
+#           var_right  = var.right()
+#           )
 
-def frechet_l(*args, steps = 200):
-    args = list(args)
-    for i in range(0,len(args)):
-        if args[i].__class__.__name__ != 'Interval':
-            args[i] = Interval(args[i])
+# def frechet_l(*args, steps = 200):
+#     args = list(args)
+#     for i in range(0,len(args)):
+#         if args[i].__class__.__name__ != 'Interval':
+#             args[i] = Interval(args[i])
 
-    Left, Right, mean, var = __get_bounds('frechet_l',steps,*args)
+#     Left, Right, mean, var = __get_bounds('frechet_l',steps,*args)
 
-    return Pbox(
-          Left,
-          Right,
-          steps      = steps,
-          shape      = 'frechet_l',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
-          )
+#     return Pbox(
+#           Left,
+#           Right,
+#           steps      = steps,
+#           shape      = 'frechet_l',
+#           mean_left  = mean.left(),
+#           mean_right = mean.right(),
+#           var_left   = var.left(),
+#           var_right  = var.right()
+#           )
 
 def genlogistic(*args, steps = 200):
     args = list(args)
@@ -2017,7 +2017,7 @@ def uniform(a, b, steps = 200):
           var_right  = var.right()
           )
 
-def vonmises(*args, steps = 200):
+def vonmises(*args, steps = Pbox.STEPS):
     args = list(args)
     for i in range(0,len(args)):
         if args[i].__class__.__name__ != 'Interval':

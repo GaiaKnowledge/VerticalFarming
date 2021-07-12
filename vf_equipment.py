@@ -38,6 +38,19 @@ class Lights(object):
         safety_certification = 'Appropiate horticultural lightng designation by OSHA NRTL OR SCC-recognised body'
         return
 
+def get_lights(light_system):
+    light = None
+    if light_system == 'Intravision Spectra Blade Single Sided - J':
+        light = Lights('Intravision Spectra Blade Single Sided - J', 'LED', 'Spectra J', 160,
+               '32-37.5 (Vdc)', 120, 100, '1.6-3.4', 1.6, 0, '152 degree coverage',
+               'Passive Air Cooling', 0, 0, 0, 60000, '2.39m x 112mm x 36mm', 5.5,
+               '3m +-0.2m', 0, '3-year std', 0,
+               'https://www.intravisiongroup.com/spectra-blades', False)
+    else:
+        raise RuntimeError(f"Unknown light system: {light_system}")
+    return light
+
+
 class System(object):
     def __init__(self, system_multiplier, dimensions, area, plant_sites, cost_per, max_trays, no_of_levels, website):
         self.system_multiplier = system_multiplier

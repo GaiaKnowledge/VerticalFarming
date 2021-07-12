@@ -60,7 +60,7 @@ class Crops(object):
         # gailan = Crops('gailan	0	0	16	30	0	0	5.638506716	-	5.857804726	5.474260697	5.474260697	-	-	2.737130348	0	0	0	0	0	0	0	0	0
         # kale = Crops('kale	0	0	16	30	0	0	15.2848893	-	15.87863184	14.83992363	14.83992363	-	-	7.419734328	0	0	0	0	0	0	0	0	0
         # leeks = Crops('Leeks	0	0	16	30	0	0	22.86886965	-	23.75698109	22.20278607	-	-	-	11.10139303	0	0	0	0	0	0	0	0	0
-        lettuce_fu_mix = Crops('Lettuce (Farm Urban Mix)',	0,	0,	16,	35,	0,	0,	0,	33,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0, 'leafy greens')
+        lettuce_fu_mix = Crops('Lettuce (Farm Urban Mix)',	0,	0,	16,	46,	0,	0,	0,	132,	0,	132,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0, 'leafy greens')
         # lettuce_heads = Crops('lettuce - heads	0	0	16	35	0	0	30.42282164	23.47	31.60393706	29.5365301	29.5365301	-	-	14.76849254	0	0	0	0	0	0	0	0	0
         # lettuce_butterhead = Crops('lettuce (butterhead)	295	17	16	30	0.007	0.048	-	14.2058	-	-	-	-	-	-	402	0.1	1515	0.2	0.2	0.2	0.0127	0.67	78.5
         # lettuce_iceberg = Crops('lettuce (iceberg)	250	14.4	16	73	0.018	0.04	-	-	-	-	-	-	-	-	402	0.5	565	0.3	0.2	0.2	0.0108	0.67	56.6
@@ -143,7 +143,7 @@ def get_crop(crop_type):
     if crop_type == 'Basil - Lemon':
         crop = Crops('Basil - Lemon', 'n/a',	'n/a',	14,	42,	'n/a', 'n/a', 'n/a', 13.067,	'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 0.03, 0.97, 'herbs')
     elif crop_type == 'Lettuce (Farm Urban Mix)':
-        crop = Crops('Lettuce (Farm Urban Mix)',	0,	0,	16,	35,	0,	0,	0,	33,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0.03, 0.97, 'leafy greens')
+        crop = Crops('Lettuce (Farm Urban Mix)',	0,	0,	16,	35,	0,	0,	0,	40.33754,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0.03, 0.97, 'leafy greens')
     elif crop_type == 'Basil - Genovese':
         crop = Crops('Basil - Genovese',	0,	0,	14,	42,	0,	0,	34.33833756,	9.802857143,	35.67186965,	33.33830224,	33.33830224, 0,	0,	16.66892363,	0,	0,	0,	0,	0,	0,	0,	0,	0.03, 0.97, 'herbs')
     elif crop_type == 'None':
@@ -151,3 +151,37 @@ def get_crop(crop_type):
     else:
         raise RuntimeError(f"Unknown crop: {crop_type}")
     return crop
+
+class Media(object):
+
+    def __init__(self, type, cost):
+        self.type = type
+        self.cost = cost
+
+def get_media(media_type):
+
+    """Get Media
+        Notes: Media is extracted from /Users/Francis/PycharmProjects/VerticalFarming/Current_Financial_Model.xlsx
+
+    Returns:
+        media (object): The farm scenario that provided the basis of the analysis
+
+    To Do:
+        1. Correct the media prices according to your farm and suppliers
+    """
+    media = None
+    # Media Catalogue
+    if media_type == 'Rockwool':
+        media = Media('Rockwool', 0.026)
+    elif media_type == 'Hemp':
+        media = Media('Hemp', 0.02) # INCORRECT
+    elif media_type == 'Jute':
+        media = Media('Jute', 0.02) #INCORRECT
+    elif media_type == 'Peat':
+        media = Media('Peat', 0.02) #INCORRECT
+    elif media_type == 'Cococoir':
+        media = Media('Coco coir', 0.02) #INCORRECT
+    else:
+        raise RuntimeError(f"Unknown media: {media_type}")
+    return media
+

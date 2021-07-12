@@ -1,0 +1,22 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+plt.rcdefaults()
+fig, ax = plt.subplots()
+
+# Example data
+reports = ('VF Japanese Ministry (2014)', 'VF #5 (2017)', 'VF Japanese Ministry (2018)', 'VF #17 (2019)', '#5 Container VF (2017)',
+ '#17 Container VF (2019)', #5 GH (2017), #19 GH (2019))
+performance = (25, 27, 50, 47, 50, 43, 67, 50)
+error = (0,0,0, 16, 0, 14, 0, 11)
+
+ax.barh(y_pos, performance, xerr=error, align='center')
+ax.set_yticks(y_pos)
+ax.set_yticklabels(reports)
+ax.invert_yaxis()  # labels read top-to-bottom
+ax.set_y_label(Analyses (see Table 1)')
+ax.set_xlabel('Profitability')
+ax.set_title('Profitability of Vertical Farms, Container Farms and Greenhouses')
+
+plt.show()

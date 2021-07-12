@@ -15,6 +15,7 @@ from inputs import Scenario
 from inputs import Growthplan
 from inputs import Staff
 import vf_crops
+import copy
 
 MONTHS_IN_YEAR = 12
 DAYS_IN_YEAR = 365.25
@@ -34,6 +35,7 @@ def get_scenario():
     input_filepath = './Current_Financial_Model.xlsx'  # Make a copy and call spreadsheet this name
     inputs = pd.read_excel(input_filepath, index_col=0).to_dict()
     inputs = inputs['Inputs']
+    zipgrow_growing_area = 24.481536
 
     scenario = Scenario()
     scenario.start_date = inputs['start_date']
@@ -46,6 +48,7 @@ def get_scenario():
     scenario.packaging_cost_pilot = inputs['packaging_cost_pilot']
     scenario.packaging_cost_full = inputs['packaging_cost_full']
     scenario.other_costs_pilot = inputs['other_costs_pilot']
+    scenario.other_costs_full = inputs['other_costs_full']
 
     scenario.farm_type = inputs['farm_type']
     scenario.business_model = inputs['business_model']
@@ -74,6 +77,8 @@ def get_scenario():
     scenario.loan_interest = inputs['loan_interest']
     scenario.loan_tenure = inputs['loan_tenure']
     scenario.loan_type = inputs['loan_type']
+
+    scenario.currency=inputs['currency']
 
     # for crop_type in ['lettuce_fu_mix', 'basil_lemon', 'basil_genovese']:
     for i in range(1,5):
@@ -146,7 +151,11 @@ def get_scenario():
     scenario.parttime_count_y2 = inputs['parttime_count_y2']
 
     scenario.growing_area_pilot = scenario.facility_size_pilot * scenario.percent_production_area_pilot
-    scenario.stacked_growing_area_pilot = scenario.growing_area_pilot * scenario.growing_levels_pilot
+
+    if scenario.system_type == 'ZipRack':
+        scenario.stacked_growing_area_pilot = round(scenario.system_quantity * zipgrow_growing_area, 1)
+    else:
+        scenario.stacked_growing_area_pilot = round(scenario.growing_area_pilot * scenario.growing_levels_pilot, 1)
 
     scenario.insurance_pilot = inputs['insurance_pilot']
     scenario.insurance_full = inputs['insurance_full']
@@ -173,9 +182,26 @@ def get_scenario():
     scenario.pest_detection = inputs['pest_detection']
     scenario.electrical_backup = inputs['electrical_backup']
 
+    scenario.energy_type = inputs['energy_type']
+    scenario.daily_energy_consumption = inputs['daily_energy_consumption']
+
+    scenario.grants_rev_y0 = inputs['grants_rev_y0']
+    scenario.grants_rev_y1 = inputs['grants_rev_y1']
+    scenario.grants_rev_y2 = inputs['grants_rev_y2']
+    scenario.grants_rev_y3 = inputs['grants_rev_y3']
+    scenario.grants_rev_y4 = inputs['grants_rev_y4']
+    scenario.grants_rev_y5 = inputs['grants_rev_y5']
+    scenario.grants_rev_y6 = inputs['grants_rev_y6']
+    scenario.grants_rev_y7 = inputs['grants_rev_y7']
+    scenario.grants_rev_y8 = inputs['grants_rev_y8']
+    scenario.grants_rev_y9 = inputs['grants_rev_y9']
+    scenario.grants_rev_y10 = inputs['grants_rev_y10']
+    scenario.grants_rev_y11 = inputs['grants_rev_y11']
+
+
     return scenario
 
-def export_results(financial_annual_overview, financial_summary, risk_dataframe):
+def export_results(financial_annual_overview, financial_summary, risk_dataframe, p_box):
     """Export results function
         Notes: Defines job roles and attributes
 
@@ -184,12 +210,66 @@ def export_results(financial_annual_overview, financial_summary, risk_dataframe)
          financial_summary (dataframe): A financial summary over the analysis period
          risk_dataframe (dataframe):A annual financial overview of the analysis period with risk included
      """
+    writer = pd.ExcelWriter('results.xlsx', engine='xlsxwriter')
+    financial_summary.to_excel(writer, sheet_name='Summary')
+    financial_annual_overview.to_excel(writer, sheet_name='Overview')
 
-    with pd.ExcelWriter('./results.xlsx') as writer:
-        #financial_summary.to_excel(writer, "results.xlsx")
-        financial_annual_overview.to_excel(writer, "results.xlsx")
+    writer.save()
+
+    #if p_box == 'yes':
+
+
+    # with pd.ExcelWriter('./results.xlsx') as writer:
+    #     financial_summary.to_excel(writer, "results.xlsx")
+    #     financial_annual_overview.to_excel(writer, "results.xlsx")
+
         #risk_dataframe.to_excel(writer, "results.xlsx")
     return
+
+# def mean_dataframe(risk_dataframe, timeseries_yearly):
+#     """Average the p-boxe dataframe for mean values
+#
+#     Args:
+#         risk_dataframe (dataframe)
+#     Returns:
+#         mean_dataframe (dataframe)
+#     To do:
+#        1. Mean the P-Box"""
+#
+#     indices = [1, 6, 11, 16]
+#     new_timeseries = []
+#
+#     for index in indices:
+#         new_timeseries.append(timeseries_yearly[index])
+#     new_timeseries.append('Total')
+#
+#     mean_dataframe = pd.DataFrame(index= ['Cumulative Yield', 'Total Revenue', 'Total COGS', 'Gross Profit',
+#                             'Total OPEX', 'EBITDA', 'Loan Balance', 'Depreciation', 'Net Profit', 'Return on Investment', 'Financial Balance'] ,columns=new_timeseries)
+#
+#     for i in range(risk_dataframe.shape[0]):  # iterate over rows
+#         for j in range(risk_dataframe.shape[1]):  # iterate over columns
+#             a = sum(dataframe.at[i, j])/400
+#             # get cell value
+#             print(value, end="\t")
+#         print()
+#     return
+
+def get_currency(scenario):
+
+    if scenario.currency == 'GBP':
+        scenario.currency = '£'
+    elif scenario.currency == 'USD':
+        scenario.currency = '$'
+    elif scenario.currency == 'JPY':
+        scenario.currency = '¥'
+    elif scenario.currency == 'AUD':
+        scenario.currency = 'AUS $'
+    elif scenario.currency == 'EUR':
+        scenario.currency = '€'
+    else:
+        raise RuntimeError(f"Unknown currency: {scenario.currency}")
+    return scenario.currency
+
 
 # Staff List ( Edit this to fill in staff names)
 def get_staff_list(scenario):
@@ -216,17 +296,16 @@ def get_staff_list(scenario):
 
     # Staff
     staff_list=[]
-    ceo = Staff('unknown', 'CEO', scenario.ceo_msalary, scenario.ceo_count_y1, scenario.ceo_count_y2, 'indirect', 0, 0)
-    headgrower = Staff('Sam Bannon','Head Grower', scenario.hgrower_msalary, scenario.hgrower_count_y1, scenario.hgrower_count_y2, 'indirect', 0, 0)
-    marketer = Staff('Paul Myers','Marketer', scenario.marketer_msalary, scenario.marketer_count_y1, scenario.marketer_count_y2, 'indirect', 0, 0)
-    scientist = Staff('Jens Thomas', 'Scientist', scenario.scientist_msalary, scenario.scientist_count_y1, scenario.scientist_count_y2, 'indirect', 0, 0)
-    sales_person = Staff('unknown', 'Sales Person', scenario.salesperson_msalary, scenario.salesperson_count_y1, scenario.salesperson_count_y2, 'indrect', 0, 0)
-    manager = Staff('Jayne Goss', 'Manager', scenario.manager_msalary, scenario.manager_count_y1, scenario.manager_count_y2,'indrect', 0, 0)
-    delivery = Staff('unknown', 'Delivery', scenario.delivery_msalary, scenario.delivery_count_y1, scenario.delivery_count_y2, 'direct', 0, 0)
-    farmhand = Staff('unknown', 'Farm Hand', scenario.farmhand_msalary, scenario.farmhand_count_y1, scenario.farmhand_count_y2, 'direct', 0, 0)
-    admin = Staff('unknown', 'Admin', scenario.admin_msalary, scenario.admin_count_y1, scenario.admin_count_y2, 'salary', 0, 0)
-    part_time = Staff('unknown', 'Part-time Employee', scenario.parttime_wage, scenario.parttime_count_y1, scenario.parttime_count_y2, 'indirect', 8.72, 20)
-
+    ceo = Staff('unknown', 'CEO', scenario.ceo_msalary, scenario.ceo_count_y1, scenario.ceo_count_y2, 'indirect', 0, 0, 0)
+    headgrower = Staff('unknown','Head Grower', scenario.hgrower_msalary, scenario.hgrower_count_y1, scenario.hgrower_count_y2, 'indirect', 0, 0, 0)
+    marketer = Staff('unknown','Marketer', scenario.marketer_msalary, scenario.marketer_count_y1, scenario.marketer_count_y2, 'indirect', 0, 0, 0)
+    scientist = Staff('unknown', 'Scientist', scenario.scientist_msalary, scenario.scientist_count_y1, scenario.scientist_count_y2, 'indirect', 0, 0, 0)
+    sales_person = Staff('unknown', 'Sales Person', scenario.salesperson_msalary, scenario.salesperson_count_y1, scenario.salesperson_count_y2, 'indrect', 0, 0, 0)
+    manager = Staff('unknown', 'Manager', scenario.manager_msalary, scenario.manager_count_y1, scenario.manager_count_y2,'indrect', 0, 0, 0)
+    delivery = Staff('unknown', 'Delivery', scenario.delivery_msalary, scenario.delivery_count_y1, scenario.delivery_count_y2, 'direct', 0, 0, 0)
+    farmhand = Staff('unknown', 'Farm Hand', scenario.farmhand_msalary, scenario.farmhand_count_y1, scenario.farmhand_count_y2, 'direct', 0, 0, 0)
+    admin = Staff('unknown', 'Admin', scenario.admin_msalary, scenario.admin_count_y1, scenario.admin_count_y2, 'salary', 0, 0, 0)
+    part_time = Staff('unknown', 'Part-time Employee', 0, 0, 0, 'direct', scenario.parttime_wage, scenario.parttime_count_y1, scenario.parttime_count_y2)
     return ceo, headgrower, marketer, scientist, sales_person, manager, delivery, farmhand, admin, part_time       # Edit
 # Date Time
 def get_calendar(start_date, years):
@@ -273,7 +352,7 @@ def get_gp(scenario):
 
     To Do:
     """
-
+    zipgrow_growing_area = 24.481536 #m^2
     gp = Growthplan()
     gp.upgrade_year = scenario.start_date + timedelta(days=DAYS_IN_YEAR) # When scaling of pilot farm occurs
     gp.facility_size_full = scenario.facility_size_pilot * scenario.growing_area_mulitplier
@@ -281,9 +360,14 @@ def get_gp(scenario):
     gp.growing_levels_full = scenario.growing_levels_pilot
     gp.no_lights_full = scenario.no_lights_pilot * scenario.growing_area_mulitplier
     gp.packaging_cost_full = scenario.packaging_cost_pilot
-    gp.other_costs_full = scenario.other_costs_pilot
+    gp.other_costs_full = scenario.other_costs_full
     gp.growing_area_full = scenario.growing_area_pilot * scenario.growing_area_mulitplier
-    gp.stacked_growing_area_full = round(gp.growing_area_full * gp.growing_levels_full, 1)
+
+    if scenario.system_type == 'ZipRack':
+        gp.stacked_growing_area_full = round(scenario.system_quantity * scenario.growing_area_mulitplier * zipgrow_growing_area, 1)
+    else:
+        gp.stacked_growing_area_full = round(gp.growing_area_full * gp.growing_levels_full, 1)
+
     return gp
 
 # CAPEX
@@ -371,7 +455,7 @@ def calc_hvac_energy(scenario):
 
 
 # Yields
-def calc_best_yield(scenario, growth_plan, years):
+def calc_best_yield(scenario, growth_plan, years, p_box):
     """Calculate Best Case Yield
     Note:
         Retrieves the best case yield for a given crop type by seeking the attribute that aligns with the system type
@@ -391,7 +475,6 @@ def calc_best_yield(scenario, growth_plan, years):
         byield_crop4 (list): The best case yield for crop type 4 as a time series
 
     To Do:
-        1. Max yield needs to be made dependant on system selection scenario.crop1_system and corresponding attribute of object
         2. Crop type as on object is an input. Ideally crop_typ1 should be mapped onto scenario.crop_typ1 which is currently a string rather than an object.
     """
 
@@ -399,7 +482,26 @@ def calc_best_yield(scenario, growth_plan, years):
     for crop_parameter in scenario.crop_parameters:
         crop = vf_crops.get_crop(crop_parameter.type)
         current_crop_yield = [0]
-        max_yield = crop.drip_tower # This needs to be adaptable to whichever system is in selection
+        #if p_box == 'no':
+        if crop_parameter.system == 'Drip Tower':
+            max_yield = crop.drip_tower # This needs to be adaptable to whichever system is in selection
+        elif crop_parameter.system == 'NFT':
+            max_yield = crop.nft
+        elif crop_parameter.system == 'Aeroponic':
+            max_yield = crop.aeroponic
+        elif crop_parameter.system == 'Ebb/Flow':
+            max_yield = crop.ebb_flow
+        elif crop_parameter.system == 'DWC':
+            max_yield = crop.dwc
+        elif crop_parameter.system == 'Bucket':
+            max_yield = crop.bucket
+        elif crop_parameter.systemm == 'Slab':
+            max_yield = crop.slab
+        elif crop_parameter.system == 'Soil':
+            max_yield = crop.soil
+        else:
+            raise RuntimeError(f"Unknown system: {crop_parameter.system}")
+
         for y in range(1, years+1):
             if y == 1:  # under upgrade year check gp.upgrade_year
                 current_crop_yield.append(max_yield  * scenario.stacked_growing_area_pilot * crop_parameter.percent)
@@ -409,7 +511,7 @@ def calc_best_yield(scenario, growth_plan, years):
     return crop_yields
 
 
-def calc_adjustment_factors(scenario):
+def calc_adjustment_factors(scenario, p_box):
     """Calculate Adjustment Factors
     Note:
         Adjustment factors are retrieved from DataFrame called Factor table. This a general way to computing reductions
@@ -430,17 +532,40 @@ def calc_adjustment_factors(scenario):
     """
 
     # Yield adjustment factors
-    factor_table =  pd.DataFrame({'High': [1, 1, 1, 1, 'n/a'],
+    if p_box == 'no':
+        factor_table =  pd.DataFrame({'High': [1, 1, 1, 1, 'n/a'],
                                   'Medium': [0.9, 0.9, 0.9, 0.97, 'n/a'],
                                   'Low': [0.6, 0.85, 0.85, 0.95, 'n/a'],
                                   'Yes': ['n/a', 'n/a', 'n/a', 'n/a', 1],
                                     'No':['n/a', 'n/a', 'n/a', 'n/a', 0.9]})
-    factor_table.index = ['Light Control', 'Climate Contol', 'Nutrient Control', 'Air Conditioning', 'CO2 Enrichment']
+        factor_table.index = ['Light Control', 'Climate Contol', 'Nutrient Control', 'Air Conditioning', 'CO2 Enrichment']
 
-    light_factor = factor_table.loc['Light Control', scenario.lighting_control]
-    temp_factor = factor_table.loc['Climate Contol', scenario.climate_control]
-    nutrient_factor = factor_table.loc['Nutrient Control', scenario.nutrient_control]
-    co2_factor = factor_table.loc['CO2 Enrichment', scenario.co2_enrichment]
+        light_factor = factor_table.loc['Light Control', scenario.lighting_control]
+        temp_factor = factor_table.loc['Climate Contol', scenario.climate_control]
+        nutrient_factor = factor_table.loc['Nutrient Control', scenario.nutrient_control]
+        co2_factor = factor_table.loc['CO2 Enrichment', scenario.co2_enrichment]
+
+    elif p_box == 'yes':
+        factor_table =  pd.DataFrame({'High': [pba.Pbox([0.95,1]), pba.Pbox([0.95,1]), pba.Pbox([0.95,1]), pba.Pbox([0.97,1]), 'n/a'],
+                                   'Medium': [pba.Pbox([0.75,0.95]), pba.Pbox([0.85,0.95]), pba.Pbox([0.85,0.95]), pba.Pbox([0.96,0.97]), 'n/a'],
+                                   'Low': [pba.Pbox([0.6,0.75]), pba.Pbox([0.85,0.95]), pba.Pbox([0.85,0.95]), pba.Pbox([0.95,0.96]), 'n/a'],
+                                   'Yes': ['n/a', 'n/a', 'n/a', 'n/a', pba.Pbox([0.85,1])],
+                                       'No':['n/a', 'n/a', 'n/a', 'n/a', pba.Pbox([0.85,00.95])]})
+        factor_table.index = ['Light Control', 'Climate Contol', 'Nutrient Control', 'Air Conditioning', 'CO2 Enrichment']
+        # factor_table = pd.DataFrame({'High': [1, 1, 1, 1, 'n/a'],
+        #                              'Medium': [0.9, 0.9, 0.9, 0.97, 'n/a'],
+        #                              'Low': [0.6, 0.85, 0.85, 0.95, 'n/a'],
+        #                              'Yes': ['n/a', 'n/a', 'n/a', 'n/a', 1],
+        #                              'No': ['n/a', 'n/a', 'n/a', 'n/a', 0.9]})
+        # factor_table.index = ['Light Control', 'Climate Contol', 'Nutrient Control', 'Air Conditioning',
+        #                       'CO2 Enrichment']
+
+        light_factor = factor_table.loc['Light Control', scenario.lighting_control]
+        temp_factor = factor_table.loc['Climate Contol', scenario.climate_control]
+        nutrient_factor = factor_table.loc['Nutrient Control', scenario.nutrient_control]
+        co2_factor = factor_table.loc['CO2 Enrichment', scenario.co2_enrichment]
+
+
     return light_factor, temp_factor, nutrient_factor, co2_factor
 
 def calc_adjusted_yield(crop_yields, light_factor, temp_factor, nutrient_factor, co2_factor):
@@ -449,7 +574,7 @@ def calc_adjusted_yield(crop_yields, light_factor, temp_factor, nutrient_factor,
         adjusted_yields.append(np.array(cyield, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor)
     return adjusted_yields
 
-def calc_waste_adjusted_yield(scenario, crop_yields, years):
+def calc_waste_adjusted_yield(scenario, crop_yields, years, p_box):
     """Calculate Waste Adjusted Yields Function
 
     Args:
@@ -467,11 +592,28 @@ def calc_waste_adjusted_yield(scenario, crop_yields, years):
         wyield_crop4 (list): Annual waste adjusted yield of crop 4 as a time series
 
     To Do:
+        1. Update with uncertainty and pboxes
     """
-    waste_rates = pd.DataFrame({'High': [0, 0.1254,	0.1129,	0.1016,	0.0934,	0.0860,	0.0791,	0.0728,	0.0684,	0.0643,	0.0604,	0.0568,	0.0534,	0.0502,	0.0472,	0.0444, 0.0444, 0.0444, 0.0444, 0.0444, 0.0444],
-                  'Medium': [0, 0.1777, 0.1599,	0.1439,	0.1324,	0.1218,	0.1121,	0.1031,	0.0969,	0.0911,	0.0856,	0.0805,	0.0757,	0.0711,	0.0668,	0.0628,	0.0628,	0.0628,	0.0628,	0.0628,	0.0628],
-                  'Low': [0, 0.2404,	0.2163,	0.1947,	0.1791,	0.1648,	0.1516,	0.1395,	0.1311,	0.1232,	0.1158,	0.1089,	0.1024,	0.0962,	0.0904,	0.0850,	0.0850,	0.0850,	0.0850,	0.0850,	0.850]})
-    waste_rates.index = range(0, 21)
+    if p_box == 'no':
+        multiply_factor = 0.5
+    if p_box == 'yes':
+        multiply_factor = pba.Pbox(pba.I(0.5, 0.75))
+        #multiply_factor = 0.5
+
+
+    high = [0]
+    medium =[0]
+    low = [0]
+
+    for x in range(1, years+1):
+        low.append(multiply_factor *(((-5*10**-5)-5E-05*x**3) + (0.0018*x**2) - (0.0281*x) + 0.2659))
+        medium.append(multiply_factor*(((-4*10**-5)*x**3) + (0.0013*x**2) - (0.0208*x) + 0.1966))
+        high.append(multiply_factor*(((-2*10**-5)*x**3) + (0.0009*x**2) - (0.0146*x) + 0.1387))
+
+    waste_rates = pd.DataFrame({'High': high,
+                  'Medium': medium,
+                  'Low': low})
+    waste_rates.index = range(years+1)
     # Learning curve for loop according to Dataframe
     waste_adjusted_yields = []
     for cyield in crop_yields:
@@ -479,6 +621,7 @@ def calc_waste_adjusted_yield(scenario, crop_yields, years):
         for y in range(years+1):
             this_yield.append(cyield[y]*(1-waste_rates.loc[y,scenario.grower_exp]))
         waste_adjusted_yields.append(this_yield)
+
     return waste_adjusted_yields
 
 # Revenue
@@ -607,7 +750,7 @@ def calc_hospitality_rev(scenario, years):
     return hospitality_rev
 
 # Grants
-def calc_grants_rev(years):
+def calc_grants_rev(years, scenario):
     """Calculate Grants Revenue Function
 
     Args:
@@ -623,16 +766,13 @@ def calc_grants_rev(years):
         Include crowdfunding
         Create a donation based function, decide whether it becomes a new revenue stream or incoporated into existing stream
     """
-    grants_rev = [0]
+    grants_rev = [scenario.grants_rev_y0, scenario.grants_rev_y1, scenario.grants_rev_y2, scenario.grants_rev_y3,scenario.grants_rev_y4,scenario.grants_rev_y5,scenario.grants_rev_y6,scenario.grants_rev_y7,scenario.grants_rev_y8,scenario.grants_rev_y9,scenario.grants_rev_y10,scenario.grants_rev_y11]
+    g_len = len(grants_rev)
 
-    for y in range(1, years+1):
+    for y in range(g_len, years+1):
 
-        annual_grant = 0
+        grants_rev.append(0)
 
-        if random.random() >= 1:
-            annual_grant += 200000
-
-        grants_rev.append(annual_grant)
     return grants_rev
 
 # COGS
@@ -657,26 +797,33 @@ def calc_direct_labour(farmhand, delivery, part_time, years, scenario):
         as well as part-time hours/wages. This should be an output
         Part-time hours  - Hours estimation will inform the amount of time required for part-time hours
     """
-
+    direct_labour = [0]
+    part_time_hours =[0] # Annual
     cogs_direct_labour = [0]
-    labour_efficency_counter = 0
-    mu, sigma = scenario.labour_improvement, 2
-
-    direct_labour = np.random.randint(2000, 2200, size=(1, 16))
+    HOURS_IN_WEEK = 40
+    WEEKS_IN_MONTH = 4
+    MONTHS_IN_YEAR
 
     for y in range(1, years+1):
 
         if y == 1:
-            direct_labour_cost = MONTHS_IN_YEAR*((farmhand.salary * farmhand.count_pilot) + (delivery.salary * delivery.count_pilot) + (part_time.count_pilot * part_time.hours * part_time.wage))
-        elif y > 1:
-            direct_labour_cost = MONTHS_IN_YEAR*((farmhand.salary * farmhand.count_full) + (delivery.salary * delivery.count_full) + (part_time.count_full * part_time.hours * part_time.wage * (1-labour_efficency_counter)))
+            direct_labour_cost = MONTHS_IN_YEAR*((farmhand.salary * farmhand.count_pilot) + (delivery.salary * delivery.count_pilot) + (part_time.hours * part_time.wage))
+            part_time_hours.append(part_time.hours*MONTHS_IN_YEAR)
+            direct_labour.append(((farmhand.count_pilot+delivery.count_pilot)*HOURS_IN_WEEK*WEEKS_IN_MONTH*MONTHS_IN_YEAR) + part_time_hours[y])
+        elif y == 2:
+            direct_labour_cost = MONTHS_IN_YEAR*((farmhand.salary * farmhand.count_full) + (delivery.salary * delivery.count_full) + (part_time.hours_full * part_time.wage))
+            part_time_hours.append(part_time.hours_full*MONTHS_IN_YEAR)
+            direct_labour.append(((farmhand.count_full+delivery.count_full)*HOURS_IN_WEEK*WEEKS_IN_MONTH*MONTHS_IN_YEAR)+part_time_hours[y])
+        elif y > 2:
+            part_time_hours.append(part_time_hours[y-1] * (1 - scenario.labour_improvement))
+            direct_labour_cost = (MONTHS_IN_YEAR * ((farmhand.salary * farmhand.count_full) + (delivery.salary * delivery.count_full))) + (part_time_hours[y] * part_time.wage)
+            direct_labour.append(((farmhand.count_full+delivery.count_full)*HOURS_IN_WEEK*WEEKS_IN_MONTH*MONTHS_IN_YEAR)+part_time_hours[y])
 
-        labour_efficency_counter += np.random.normal(mu, sigma)
         cogs_direct_labour.append(direct_labour_cost)
 
     return cogs_direct_labour, direct_labour
 
-def calc_growing_media(total_sales):
+def calc_growing_media(scenario, total_sales, adjusted_yields):
     """Calculate Growing Media costs Function
 
     Args:
@@ -689,9 +836,37 @@ def calc_growing_media(total_sales):
         Currently taken as an estimate as 2.5% of sales and should be improved to be dependant on growing media selected
         Similar to packaging, should take into consideration economic order quantity
     """
+    cogs_media = []
+    num_plants = []
 
-    percent_of_growing_media_to_sales = 0.025
-    cogs_media = [i * percent_of_growing_media_to_sales for i in total_sales]
+    media = vf_crops.get_media(scenario.growing_media)
+
+    for i, crop_param in enumerate(scenario.crop_parameters):
+        a = adjusted_yields[i]
+        crop = vf_crops.get_crop(crop_param.type)
+        this_num_plants = [i / crop_param.harvest_weight for i in a]
+        this_cogs_media = [i * media.cost for i in this_num_plants]
+        num_plants.append(this_num_plants)
+        cogs_media.append(this_cogs_media)
+
+    # No of plants
+    total_no_of_plants = [sum(n) for n in zip(*num_plants)]
+    cogs_media = [sum(x) for x in zip(*cogs_media)]
+
+    # for y in range(years + 1):
+    #     annual_media_cost = 0
+    #     for i, a in enumerate(adjusted_yields):
+    #         annual_media_cost += (a[y] / scenario.crop_parameters[i].harvest_weight)
+    #     if y <= 1:
+    #         annual_packaging_cost *= scenario.packaging_cost_pilot
+    #     elif y > 1:
+    #         annual_packaging_cost *= scenario.packaging_cost_full
+    #     cogs_packaging.append(annual_packaging_cost)
+
+
+
+    #percent_of_growing_media_to_sales = 0.025
+    #cogs_media = [i * percent_of_growing_media_to_sales for i in total_sales]
 
     #scenario.growing_media * price_of_media * no_of_plants
     return cogs_media
@@ -733,13 +908,14 @@ def calc_packaging(scenario, years, waste_adjusted_yields):
     return cogs_packaging
 
 
-def calc_nutrients_and_num_plants(scenario, waste_adjusted_yields):
+def calc_nutrients_and_num_plants(scenario, cogs_media, adjusted_yields, years):
     num_plants = []
     cogs_seeds = []
+    cogs_nutrients =[]
     for i, crop_param in enumerate(scenario.crop_parameters):
-        w = waste_adjusted_yields[i]
+        a = adjusted_yields[i]
         crop = vf_crops.get_crop(crop_param.type)
-        this_num_plants = [i / crop_param.harvest_weight for i in w]
+        this_num_plants = [i / crop_param.harvest_weight for i in a]
         this_cogs_seeds = [i * crop.seed_cost * (1.0/crop.germination_rate) for i in this_num_plants]
         num_plants.append(this_num_plants)
         cogs_seeds.append(this_cogs_seeds)
@@ -748,8 +924,14 @@ def calc_nutrients_and_num_plants(scenario, waste_adjusted_yields):
     total_no_of_plants = [sum(n) for n in zip(*num_plants)]
     cogs_seeds_nutrients = [sum(x) for x in zip(*cogs_seeds)]
 
-    nutrient_consumption = [1000] * 16
-    #cogs_seeds_nutrients = sum(x) for x in zip(total_seeds_cost, total_nutrients_cost)
+    for y in range(years+1):
+        nutrient_cost = (cogs_seeds_nutrients[y] /0.25) - cogs_media[y] - cogs_seeds_nutrients[y]
+        # Seeds, nutrients and growing media comprise of 25%, 21% and 54% of input costs respectively
+        # Based on State of Indoor Farming Report 2017. Divide by 0.25 to get total input cost
+        cogs_nutrients.append(nutrient_cost)
+        cogs_seeds_nutrients[y] += cogs_nutrients[y]
+
+    nutrient_consumption = [1000] * 16 # Needs to be changed
 
     return cogs_seeds_nutrients, nutrient_consumption, total_no_of_plants
 
@@ -772,7 +954,7 @@ def calc_avg_photoperiod(scenario):
         avg_photoperiod += crop_param.percent * crop.photoperiod
     return avg_photoperiod
 
-def calc_electricity(scenario, gp, avg_photoperiod, light, years):
+def calc_electricity(scenario, gp, avg_photoperiod, light, years, HVAC_multiplier):
     """Calculate Electricity costs Function
 
     Args:
@@ -791,14 +973,17 @@ def calc_electricity(scenario, gp, avg_photoperiod, light, years):
     """
 
     electricity_consumption =[0]
-    HVAC_multiplier = 1.25
     for y in range(years+1):
         if y == 1:
-            electricity_consumption.append(avg_photoperiod * light.max_power * scenario.no_lights_pilot * DAYS_IN_YEAR/ 1000)
+            electricity_lights_pilot = avg_photoperiod * light.max_power * scenario.no_lights_pilot * DAYS_IN_YEAR/ 1000
+            electricity_other_pilot = scenario.daily_energy_consumption * DAYS_IN_YEAR
+            electricity_consumption.append(electricity_lights_pilot+electricity_other_pilot)
         elif y > 1: # Multiplied by 1.25 to accomodate HVAC upgrade
-            electricity_consumption.append(avg_photoperiod * light.max_power * gp.no_lights_full * DAYS_IN_YEAR * HVAC_multiplier/ 1000)
+            electricity_lights_full = avg_photoperiod * light.max_power * gp.no_lights_full * DAYS_IN_YEAR /1000
+            electricity_other_full = electricity_other_pilot
+            combined_electricity = (electricity_lights_full * HVAC_multiplier) + electricity_other_full
+            electricity_consumption.append(combined_electricity)
     cogs_electricity = [i * scenario.electricity_price for i in electricity_consumption]
-
     return cogs_electricity, electricity_consumption
 
 def calc_water(scenario, years):
@@ -894,9 +1079,10 @@ def calc_other_costs(scenario, opex_staff, years):
     opex_other_costs = [0]
 
     for y in range(1, years+1):
-
+        if y ==1:
             opex_other_costs.append(scenario.other_costs_pilot * opex_staff[y])
-
+        elif y > 1:
+            opex_other_costs.append(scenario.other_costs_full * opex_staff[y])
     return opex_other_costs
 
 def calc_insurance(scenario, years):
@@ -995,28 +1181,25 @@ def calc_depreciation(scenario, lights, avg_photoperiod, years):
     # Building
     building_depreciaiton_percent = 1/building_lifetime
     building_depreciation = scenario.capex_building * building_depreciaiton_percent
-
     # Facilities
     facilities_depreciation_percent = 1/facilities_lifetime
     facilities_depreciation = scenario.capex_facilities * facilities_depreciation_percent
-
     # Lights
     life_time_acceleration_factor = 0.8
     life_time = lights.life_time * life_time_acceleration_factor # Hours
     life_span = (life_time / avg_photoperiod)/DAYS_IN_YEAR
     lights_depreciation_percent = 1/life_span
     lights_depreciation = lights_depreciation_percent * scenario.capex_lights
-
     # Pilot
     pilot_depreciation = (lights_depreciation+facilities_depreciation+building_depreciation)/scenario.growing_area_mulitplier
-
+    total_depreciation = lights_depreciation+facilities_depreciation+building_depreciation
     depreciation = [0]
 
     for y in range(1, years+1):
         if y == 1:
             depreciation.append(pilot_depreciation)
         elif y > 1:
-            depreciation.append(lights_depreciation + facilities_depreciation + building_depreciation)
+            depreciation.append(total_depreciation)
 
     return depreciation, life_span
 
@@ -1042,7 +1225,7 @@ def calc_roi(scenario, financial_annual_overview, years):
 
     return roi
 
-def calc_payback_period(scenario, financial_annual_overview, years):
+def calc_payback_period(scenario, financial_annual_overview, years, p_box):
     """Calculating Payback Period for given Farm Scenario
 
             Notes:
@@ -1069,11 +1252,16 @@ def calc_payback_period(scenario, financial_annual_overview, years):
     for y in range(years):
         investment_balance.append(investment_balance[y] + financial_annual_overview.iloc[30,y+1])
 
-        if investment_balance[y] <= 0:
-            payback_period_list.append(y)
-        else:
-            payback_period_list.append(0)
-
+        if p_box == 'no':
+            if investment_balance[y] <= 0:
+                payback_period_list.append(y)
+            else:
+                payback_period_list.append(0)
+        if p_box == 'yes':
+            if investment_balance[y] <= 0:
+                payback_period_list.append(investment_balance[y] < 0)
+            else:
+                payback_period_list.append(investment_balance[y] > 0)
     try:
         payback_period = payback_period_list.index(1, 0, years+1)
     except ValueError:
@@ -1081,20 +1269,58 @@ def calc_payback_period(scenario, financial_annual_overview, years):
 # Does the investment balance straddle zero - P-box scenario.
     return investment_balance, payback_period
 
-def calc_financial_balance(financial_annual_overview, scenario, years, initial_capital):
+def calc_financial_balance(financial_annual_overview, scenario, years,p_box):
+    """Financial Balance
 
-    starting_balance1 = financial_annual_overview.iloc[27,0] + initial_capital - scenario.capex_pilot
-    starting_balance2 = starting_balance1 - (scenario.capex_full - scenario.capex_pilot) + financial_annual_overview.iloc[30,1]
+        Notes:
 
+        TO DO:
+        1. Financial balance does not seem accurate. Combining two P-boxes does not accurately convey positives and negatives"""
 
-    financial_balance = [starting_balance1, starting_balance2]
+    initial_capital = scenario.grants_rev_y0 + scenario.loan_amount - scenario.capex_pilot
+    starting_balance1 = initial_capital + scenario.grants_rev_y1 + financial_annual_overview.iloc[30,1] - (scenario.capex_full - scenario.capex_pilot)
+    starting_balance2 = starting_balance1 + financial_annual_overview.iloc[30,2] + financial_annual_overview.iloc[9,2]
+    financial_balance = [initial_capital, starting_balance1, starting_balance2]
+    financial_balance_min_max = copy.copy(financial_balance)
 
-    for y in range(1, years):
-        financial_balance.append(financial_balance[y] + financial_annual_overview.iloc[30,y+1])
+    a=financial_balance[2]
+    b=financial_annual_overview.iloc[30,3]
+    c = a + b
+    #d = pba.Pbox([min(a) + min(b),max(a)+max(b)])
+    print(c)
+    print(financial_balance[2])
+    print(financial_annual_overview.iloc[30,3])
+    print(pba.Pbox(pba.I(64776, 1097624))+pba.Pbox(pba.I(-334682.47, 1157849.5204)))
+    #print(d)
+    print("WHY ARE THESE NUMBERS NOT THE SAME (above/below)")
+    print(financial_balance[2]+financial_annual_overview.iloc[30,3])
 
-    financial_annual_overview.loc['Financial Balance'] = financial_balance
+    if p_box == 'yes':
+        for y in range(2, years):
+            b = financial_balance[y]
+            p = financial_annual_overview.iloc[30,y+1]
+            g = financial_annual_overview.iloc[9,y+1]
+            #b_max.append(max(financial_balance[y]))
+            #p_max.append(max(financial_annual_overview.iloc[30,y+1]))
+            #g_max.append(max(financial_annual_overview.iloc[9,y+1]))
+            # New balance = current financial balance + net profit + grants
+            """THIS IS A TEMP HACK"""
+            new_balance_min_max = pba.Pbox([min(b) + min(p) + g, max(b) + max(p)+ g])
+            new_balance = financial_balance[y] + financial_annual_overview.iloc[30,y+1] + financial_annual_overview.iloc[9,y+1]
+            financial_balance_min_max.append(new_balance_min_max)
+            financial_balance.append(new_balance)
+        print(financial_balance[3])
+        print("TEMP HACK THE FINANCIAL BALANCE GRAPH SHOULD LOOK LIKE THIS ")
+        print(financial_balance)
+        financial_annual_overview.loc['Financial Balance'] = financial_balance
+    elif p_box == 'no':
+        for y in range(2, years):
+            new_balance = financial_balance[y] + financial_annual_overview.iloc[30,y+1] + financial_annual_overview.iloc[9,y+1]
+            financial_balance.append(new_balance)
+        financial_annual_overview.loc['Financial Balance'] = financial_balance
+        financial_balance_min_max = 0
 
-    return financial_annual_overview, financial_balance
+    return financial_annual_overview, financial_balance, financial_balance_min_max
 
 # Financial Dataframe Construction
 
@@ -1159,9 +1385,9 @@ def crop_and_revenue_to_df(financial_annual_overview, waste_adjusted_yields, tot
     financial_annual_overview.loc['Revenue - Tourism'] = tourism_rev
     financial_annual_overview.loc['Revenue - Hospitality'] = hospitality_rev
     financial_annual_overview.loc['Revenue - Grants'] = grants_rev
-    financial_annual_overview.loc['Total Revenue'] = financial_annual_overview.loc['Revenue - Grants'] + financial_annual_overview.loc['Revenue - Hospitality'] + \
+    financial_annual_overview.loc['Total Revenue'] = financial_annual_overview.loc['Revenue - Hospitality'] + \
                                                      financial_annual_overview.loc['Revenue - Crop Sales'] + financial_annual_overview.loc['Revenue - Value-Added Products'] + financial_annual_overview.loc['Revenue - Tourism'] \
-                                                     + financial_annual_overview.loc['Revenue - Education']
+                                                     + financial_annual_overview.loc['Revenue - Education'] # REMOVAL OF + financial_annual_overview.loc['Revenue - Grants']
 
     return financial_annual_overview
 def cogs_to_df(financial_annual_overview, cogs_labour, cogs_media, cogs_packaging, cogs_seeds_nutrients, cogs_electricity, cogs_water):

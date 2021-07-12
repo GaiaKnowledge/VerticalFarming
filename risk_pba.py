@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import random
 import collections
+import pba
 
 REPAIR = []
 PERCENT_LIST = []
@@ -62,6 +63,7 @@ def build_risk_curves(years):
         moderate_risk.append(y * mod_def_prob / mod_def_years)
 
     return critical_risk, substantial_risk, moderate_risk
+
 def build_bankruptcy_definition(years):
     """Build a bankruptcy definition
 
@@ -109,7 +111,27 @@ def build_risk_assessment_counter(years):
         risk_counter.append(0)
     return risk_counter
 
-def risk_assessment(roi, financial_balance, bankruptcy_definition, balance_threshold, years, risk_counter, pes_counter, trad_counter, p_box):
+def Min(a,b):
+    logic = pba.Logical(min([a.Left, b.Left]), min([a.Right, b.Right]))
+    if bool(logic) == True:
+        logic = pba.Interval(1, 1)
+    elif bool(logic) == False:
+        logic = pba.Interval(0, 0)
+    return logic
+
+def Min_pba(self):
+    return pba.Logical(min([a.Left,b.Left]), min([a.Right,b.Right]))
+
+def Max(a,b):
+    logic = pba.Logical(max([a.Left,b.Left]), max([a.Right,b.Right]))
+    if bool(logic) == True:
+        logic = pba.Interval(1, 1)
+    elif bool(logic) == False:
+        logic = pba.Interval(0, 0)
+    return logic
+
+
+def pba_risk_assessment(roi, financial_balance, bankruptcy_definition, balance_threshold, years, risk_counter, pes_counter, trad_counter, p_box):
     """Risk Assessment of Bankruptcy Calculation
 
         Args:
@@ -126,28 +148,17 @@ def risk_assessment(roi, financial_balance, bankruptcy_definition, balance_thres
         Include investment balance < 0 as a necessary requisite for bankruptcy
     """
 
-    for y in range(years+1):
+    for y in range(1, years+1):
         roi_bankruptcy = roi[y] < bankruptcy_definition[y]
         balance_bankruptcy = financial_balance[y] < balance_threshold
 
     # RISK COUNTER FOR OPTIMISTIC CASE (ROI AND FINANCIAL BALANCE MUST BE BELOW THRESHOLD) - TAKES WORST PROBABILITY OF THE TWO
-        if roi[y] < bankruptcy_definition[y] and financial_balance[y] < balance_threshold: # Optimistic risk
-            risk_counter[y] += 1
-        else:
-            risk_counter[y] += 0
-
-        # RISK COUNTER FOR PESSIMISTIC CASE (Either ROI insufficient or Financial Balance insufficient)
-        if roi[y] < bankruptcy_definition[y] or financial_balance[y] < balance_threshold:
-            pes_counter[y] += 1
-                # True/False counter when analysis has no uncertainty
-                # pes_counter[y] = Max(roi_bankruptcy, balance_bankruptcy) # P BOX - Fails in both dimensions,
-                #counter when analysis has unertainty
-
-        # RISK COUNTER FOR TRADITIONAL CASE (JUST FINANCIAL BALANCE)
-        if financial_balance[y] < balance_threshold:
-            trad_counter[y] += 1
-
-    return risk_counter, pes_counter, trad_counter
+        #if roi[y] < bankruptcy_definition[y] and financial_balance[y] < balance_threshold: # Optimistic risk
+        if max(roi_bankruptcy) > 0 and max(balance_bankruptcy) > 0: # Optimistic risk
+            risk_counter[y] = min([roi_bankruptcy, balance_bankruptcy])
+            if min(risk_counter[y]) == 1:
+                risk_counter[y:] = [1] * ((years+1)-y)
+                break
 
         # RISK COUNTER FOR PESSIMISTIC CASE (Either ROI insufficient or Financial Balance insufficient)
     for y in range(1, years + 1):
@@ -200,15 +211,12 @@ def risk_assessment_probability(counter, years, simulations, timeseries_yearly, 
     assessment_df = pd.DataFrame(index=['pdf', 'cdf'], columns=timeseries_yearly)
     assessment_df.loc['pdf'] = risk_assessment_pdf
 
-    if p_box == 'yes':
-        assessment_df.loc['cdf'] = risk_assessment_cdf
-    else:
-        assessment_df.loc['cdf'] = risk_assessment_cdf
+    assessment_df.loc['cdf'] = risk_assessment_cdf
 
     return assessment_df
 
 # Risks
-def calc_pathogen_outbreak(scenario, years, waste_adjusted_yields):
+def calc_pathogen_outbreak(scenario, years, waste_adjusted_yields, p_box):
     """RISK: Pathogen outbreak on the farm
 
         Args:
@@ -233,49 +241,60 @@ def calc_pathogen_outbreak(scenario, years, waste_adjusted_yields):
              Std Dev: 4
              Frequency: 1x a year
              Cause: Low grower experience/low humditiy control increase risk of disease
+
+        TO DO:
+            1. The P-box is only an interval
+
     """
+    if p_box == 'no':
+        if scenario.biosecurity_level == 'High':
+            p_outbreak = 0.05 # Probability of outbreak for a given year
+            p_no_outbreak = 0.95 # Probability of no outbreak for a given year
+            pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+        elif scenario.biosecurity_level == 'Medium':
+            p_outbreak = 0.1 # Probability of outbreak for a given year
+            p_no_outbreak = 0.9 # Probability of no outbreak for a given year
+            pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
 
-    if scenario.biosecurity_level == 'High':
-        p_outbreak = 0.05 # Probability of outbreak for a given year
-        p_no_outbreak = 0.95 # Probability of no outbreak for a given year
-        pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
-    elif scenario.biosecurity_level == 'Medium':
-        p_outbreak = 0.1 # Probability of outbreak for a given year
-        p_no_outbreak = 0.9 # Probability of no outbreak for a given year
-        pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+        elif scenario.biosecurity_level == 'Low' or scenario.climate_control == 'Low':
+            p_outbreak = 0.2 # Probability of outbreak for a given year
+            p_no_outbreak = 0.8 # Probability of no outbreak for a given year
+            pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
 
-    elif scenario.biosecurity_level == 'Low' or scenario.climate_control == 'Low':
-        p_outbreak = 0.2 # Probability of outbreak for a given year
-        p_no_outbreak = 0.8 # Probability of no outbreak for a given year
-        pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+        elif scenario.biosecurity_level == 'Low' and scenario.climate_control == 'Low':
+            p_outbreak = 0.25 # Probability of outbreak for a given year
+            p_no_outbreak = 0.75 # Probability of no outbreak for a given year
+            pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
 
-    elif scenario.biosecurity_level == 'Low' and scenario.climate_control == 'Low':
-        p_outbreak = 0.25 # Probability of outbreak for a given year
-        p_no_outbreak = 0.75 # Probability of no outbreak for a given year
-        pathogen_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
+        pathogen_occurence = [0, *pathogen_occurence]
 
-    pathogen_occurence = [0, *pathogen_occurence]
+        pathogen_outbreak =[]
 
-    pathogen_outbreak =[]
+        # for y in range(years+1):
+        #
+        #     if pathogen_occurence[y] == 1:
+        #         #pathogen_outbreak.append(np.random.beta(8, 2))
+        #         #pathogen_outbreak.append(pba.beta(pba.I(100, 200),pba.I(4,8)))
+        #         pathogen_outbreak.append(pba.beta(pba.I(6, 100),pba.I(2,3)))
+        #
+        #     else:
+        #         pathogen_outbreak.append(1)
 
-    for y in range(years+1):
-
-        if pathogen_occurence[y] == 1:
-            pathogen_outbreak.append(np.random.beta(8, 2))
-        else:
-            pathogen_outbreak.append(1)
+    elif p_box == "yes":
+        #e = pba.env(pba.beta([180, 190], [4, 6]), pba.bernoulli(0.95))
+        #pathogen_outbreak = min(1, max(pba.U(pba.Pbox(pba.I(0, 12)), 12), e))
+        pathogen_outbreak = pba.Pbox([0.85,1])
 
     # w_risks = []
     # for w in waste_adjusted_yields:
     #     w_risks.append([a * b for a, b in zip(w, pathogen_outbreak)])
     # # HACK!!! THIS NEED TO BE FIXED TO RETURN A LIST
     # w1_risk, w2_risk, w3_risk, w4_risk = w_risks
-
     w_risks = []
     for wyield in waste_adjusted_yields:
         this_yield = []
         for y in range(years+1):
-            this_yield.append(wyield[y]*(pathogen_outbreak[y]))
+            this_yield.append(wyield[y]*pathogen_outbreak)
         w_risks.append(this_yield)
 
     return w_risks
@@ -530,6 +549,8 @@ def calc_pest_outbreak(scenario, years, waste_adjusted_yields):
     #
     w_risks = []
 
+
+
     for wyield in waste_adjusted_yields:
         this_yield = []
         for y in range(years+1):
@@ -653,7 +674,7 @@ def improved_labour_efficiency():
     return labour_efficiency
 
 
-def calc_improved_light_efficiency(scenario, years, gp, avg_photoperiod, lights, life_span, electricity_consumption):
+def calc_improved_light_efficiency(scenario, years, gp, avg_photoperiod, lights, life_span, electricity_consumption, HVAC_multiplier, light_improvement):
     """Opportunity: Light Efficiency Improvement when Lights depreciated and replaced
 
     Notes:
@@ -682,17 +703,16 @@ def calc_improved_light_efficiency(scenario, years, gp, avg_photoperiod, lights,
         Frequency: After LEDs depreciate
         Cause: After LEDs depreciated update better lights
     """
-    HVAC_multiplier =1
-    mu, sigma = 0.7, 0.08
-    s = np.random.normal(mu, sigma)
-    new_wattage_requirement = s * lights.max_power
+    #light_improvement = pba.Pbox(pba.I(upper_guess, lower_guess))
+    new_wattage_requirement = light_improvement * lights.max_power
     life_span = math.ceil(life_span)
 
     electricity_other = scenario.daily_energy_consumption * DAYS_IN_YEAR
+
     new_lights_consumption = (avg_photoperiod * new_wattage_requirement * gp.no_lights_full * DAYS_IN_YEAR)
 
     for y in range(life_span, years):
-            electricity_consumption[y+1] = (new_lights_consumption* HVAC_multiplier/ 1000) + electricity_other
+            electricity_consumption[y+1] = (new_lights_consumption * HVAC_multiplier/ 1000) + electricity_other
 
     cogs_electricity = [i * scenario.electricity_price for i in electricity_consumption]
 

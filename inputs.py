@@ -20,6 +20,7 @@ class Scenario(object):
         self.packaging_cost_pilot = None
         self.packaging_cost_full = None
         self.other_costs_pilot = None
+        self.other_costs_full = None
 
         # Characteristics
         self.farm_type = None
@@ -148,6 +149,23 @@ class Scenario(object):
         self.pest_detection = None
         self.electrical_backup = None
 
+# Energy Type
+        self.energy_type = None
+        self.daily_energy_consumption = None
+# Grants revenue
+        self.grants_rev_y0 = None
+        self.grants_rev_y1 = None
+        self.grants_rev_y2 = None
+        self.grants_rev_y3 = None
+        self.grants_rev_y4 = None
+        self.grants_rev_y5 = None
+        self.grants_rev_y6 = None
+        self.grants_rev_y7 = None
+        self.grants_rev_y8 = None
+        self.grants_rev_y9 = None
+        self.grants_rev_y10 = None
+        self.grants_rev_y11 = None
+
 
     def __str__(self):
         """String representation"""
@@ -191,7 +209,7 @@ class Staff(object):
             cost_full (float) = cost of this job role on the full-scale farm
         """
 
-    def __init__(self, name, job_role, salary, count_pilot, count_full, category, wage, hours):
+    def __init__(self, name, job_role, salary, count_pilot, count_full, category, wage, hours, hours_full):
 
         # Role
         self.job_role = job_role
@@ -202,5 +220,6 @@ class Staff(object):
         self.category = category
         self.wage = wage
         self.hours = hours
+        self.hours_full = hours_full
         self.cost_pilot = salary * count_pilot
         self.cost_full = salary * count_full
