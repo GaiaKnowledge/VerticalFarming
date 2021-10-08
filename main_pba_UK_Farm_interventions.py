@@ -99,6 +99,7 @@ from risk_pba import play_opportunities
 
 cwd = os.getcwd()  # Get the current working directory (cwd)
 files = os.listdir(cwd)  # Get all the files in that directory
+filename = './Current_Financial_Model_FU_v1.xlsx'
 
 years = 15 # Time series length !!UP TO 20!!
 simulations = 1
