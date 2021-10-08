@@ -1,6 +1,6 @@
 These instructions explain the steps required to fill in the Financial_Model_Template to be able to execute financial risk analysis on vertical farms considering commonly reported issues, opportunities and failure modes of vertical farms.
 
-The goal of this analysis is to risk-empower your business plan to help your farm become resilient and acquire funding. The spreadsheet is a prototype of the economic risk analysis software and requires information about your business model and farm set-up. This will then be processed through a Python script that will conduct a survival model analysis (first-passage time) which has been commonly used in economics research (see https://www.jstor.org/stable/2987525?origin=crossref).
+The goal of this analysis is to risk-empower your business plan to help your farm become resilient and acquire funding. The spreadsheet is a prototype of the economic risk analysis software and requires information about your business model and farm set-up. This will then be processed through a Python script that will conduct a survival model analysis (first-passage time) which has been commonly used in economics research.
 
 Getting Started: To get started, open up the template Current_Financial_Model and save a copy. It will walk through the process of setting up your model.
 
