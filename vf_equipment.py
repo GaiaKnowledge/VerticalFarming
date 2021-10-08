@@ -46,6 +46,13 @@ def get_lights(light_system):
                'Passive Air Cooling', 0, 0, 0, 60000, '2.39m x 112mm x 36mm', 5.5,
                '3m +-0.2m', 0, '3-year std', 0,
                'https://www.intravisiongroup.com/spectra-blades', False)
+    elif light_system == 'Japanese Case Study':
+        light = Lights('Japanese Case Study', 'LED', 'N/A', 32,
+               'N/A', 32, 32, 'N/A', 0, 0, 'N/A',
+               'Passive Air Cooling', 0, 0, 0, 60000, '', 0,
+               'N/A', 0, 'N/A', 0,
+               'N/A', False)
+
     else:
         raise RuntimeError(f"Unknown light system: {light_system}")
     return light

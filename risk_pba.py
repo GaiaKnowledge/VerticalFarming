@@ -4,6 +4,8 @@ import pandas as pd
 import random
 import collections
 import pba
+from vf_overview import calc_produce_sales
+from vf_overview import calc_other_costs
 
 REPAIR = []
 PERCENT_LIST = []
@@ -11,6 +13,48 @@ PERCENT_LIST = []
 MONTHS_IN_YEAR = 12
 DAYS_IN_YEAR = 365.25
 
+def play_risks(pathogen_outbreak=False, pest_outbreak=False, power_outage=False, customer_withdrawal=False, repair_risk=False,labour_problems=False, planning_delay=False,
+               scenario=None, years=None, waste_adjusted_yields=None, p_box=None, opex_salaries=None, cogs_labour=None, risk_dataframe=None, timeseries_yearly=None):
+
+    if pathogen_outbreak == True:
+    # Pathogen Outbreak
+        waste_adjusted_yields = calc_pathogen_outbreak(scenario, years, waste_adjusted_yields, p_box)
+    # Pest Outbreak
+    if pest_outbreak == True:
+        waste_adjusted_yields = calc_pest_outbreak(scenario, years, waste_adjusted_yields)
+    # Power Outage
+    if power_outage == True:
+        waste_adjusted_yields = calc_power_outage(scenario, years, waste_adjusted_yields)
+    # Sales Risk
+    _, total_sales_risk = calc_produce_sales(waste_adjusted_yields, scenario) # Cumulating affected sales
+
+    # Customer Withdrawal
+    if customer_withdrawal == True:
+        total_sales_risk = calc_customer_withdrawal(scenario, years, total_sales_risk)
+
+    # Repair Risk
+    if repair_risk == True:
+        repairs = calc_repairs(scenario, years)
+        opex_other_costs = calc_other_costs(scenario, opex_salaries, repairs, years)
+    else:
+        opex_other_costs = [0] * len(timeseries_yearly)
+    # Labour Risks
+    if labour_problems == True:
+        total_sales_risk, cogs_labour = labour_challenges(scenario, years, total_sales_risk, cogs_labour)
+
+    if planning_delay == True:
+        risk_dataframe = calc_planning_delay(risk_dataframe, timeseries_yearly, years, scenario)
+
+    return waste_adjusted_yields, total_sales_risk, opex_other_costs, cogs_labour, risk_dataframe
+
+def play_opportunities(light_efficiency=False, labour_efficiency=False, scenario=None, years=None, growth_plan=None, avg_photoperiod=None, light=None, life_span=None, electricity_consumption=None, HVAC_multiplier=None, light_improvement=None, cogs_electricity=None):
+    if light_efficiency == True:
+        cogs_electricity, electricity_consumption = calc_improved_light_efficiency(scenario, years, growth_plan,
+                                                                               avg_photoperiod, light, life_span,
+                                                                               electricity_consumption, HVAC_multiplier,
+                                                                               light_improvement)
+
+    return cogs_electricity, electricity_consumption
 
 def build_risk_dataframe(financial_annual_overview):
     """Build risk dataframe
@@ -155,8 +199,14 @@ def pba_risk_assessment(roi, financial_balance, bankruptcy_definition, balance_t
     # RISK COUNTER FOR OPTIMISTIC CASE (ROI AND FINANCIAL BALANCE MUST BE BELOW THRESHOLD) - TAKES WORST PROBABILITY OF THE TWO
         #if roi[y] < bankruptcy_definition[y] and financial_balance[y] < balance_threshold: # Optimistic risk
         if max(roi_bankruptcy) > 0 and max(balance_bankruptcy) > 0: # Optimistic risk
-            risk_counter[y] = min([roi_bankruptcy, balance_bankruptcy])
+            if roi_bankruptcy >= balance_bankruptcy:
+                risk_counter[y] = balance_bankruptcy
+            else:
+                risk_counter[y] = roi_bankruptcy
+                #risk_counter[y] = min([roi_bankruptcy, balance_bankruptcy])
+
             if min(risk_counter[y]) == 1:
+                #risk_counter[y] = min([roi_bankruptcy[y], balance_bankruptcy[y]])
                 risk_counter[y:] = [1] * ((years+1)-y)
                 break
 
@@ -182,9 +232,11 @@ def pba_risk_assessment(roi, financial_balance, bankruptcy_definition, balance_t
             if min(trad_counter[y]) == 1:
                 trad_counter[y:] = [1] * ((years+1)-y)
                 break
+    print("risk counters")
     print(risk_counter)
     print(pes_counter)
     print(trad_counter)
+    print("***")
     return risk_counter, pes_counter, trad_counter
 
 """ Compute other risk counters for ROI and Balance seperately Pessimistic outcome. 
@@ -282,8 +334,32 @@ def calc_pathogen_outbreak(scenario, years, waste_adjusted_yields, p_box):
 
     elif p_box == "yes":
         #e = pba.env(pba.beta([180, 190], [4, 6]), pba.bernoulli(0.95))
-        #pathogen_outbreak = min(1, max(pba.U(pba.Pbox(pba.I(0, 12)), 12), e))
-        pathogen_outbreak = pba.Pbox([0.85,1])
+        #pathogen_outbreak = pba.Pbox([0.85,0.95])
+        #pathogen_outbreak = pba.Pbox(pba.I(1,1))
+        #pathogen_outbreak = pba.mixture(1, pba.Pbox(pba.I(0.85,0.95)), w=[0.95,0.05])
+
+        if scenario.biosecurity_level == 'High':
+            pathogen_outbreak = pba.mixture(1, pba.Pbox(pba.I(0.85, 0.95)), w=[0.95, 0.05])
+            p_outbreak = 0.05 # Probability of outbreak for a given year
+            p_no_outbreak = 0.95 # Probability of no outbreak for a given year
+            p_impact = pba.mmms(0.85,0.95,0.93,0.025)
+        elif scenario.biosecurity_level == 'Medium':
+            p_outbreak = 0.1 # Probability of outbreak for a given year
+            p_no_outbreak = 0.9 # Probability of no outbreak for a given year
+            p_impact = pba.mmms(0.85,0.95,0.93,0.025)
+
+        elif scenario.biosecurity_level == 'Low' or scenario.climate_control == 'Low':
+            p_outbreak = 0.2 # Probability of outbreak for a given year
+            p_no_outbreak = 0.8 # Probability of no outbreak for a given year
+            p_impact = pba.mmms(0.85,0.95,0.93,0.025)
+
+        elif scenario.biosecurity_level == 'Low' and scenario.climate_control == 'Low':
+            p_outbreak = 0.25 # Probability of outbreak for a given year
+            p_no_outbreak = 0.75 # Probability of no outbreak for a given year
+            p_impact = pba.beta(8,2)
+            p_impact = pba.mmms(0.85,0.95,0.93,0.025)
+
+    pathogen_outbreak = pba.mixture(1, p_impact, w=[p_outbreak, p_no_outbreak])
 
     # w_risks = []
     # for w in waste_adjusted_yields:
@@ -294,7 +370,9 @@ def calc_pathogen_outbreak(scenario, years, waste_adjusted_yields, p_box):
     for wyield in waste_adjusted_yields:
         this_yield = []
         for y in range(years+1):
-            this_yield.append(wyield[y]*pathogen_outbreak)
+            this_yield.append(pathogen_outbreak.mul(wyield[y]))
+            #this_yield.append(wyield[y].mul(pathogen_outbreak))
+            #this_yield.append(wyield[y]*pathogen_outbreak)
         w_risks.append(this_yield)
 
     return w_risks
@@ -322,40 +400,36 @@ def calc_repairs(scenario, years):
     """
 
     if  scenario.automation_level == 'High':
-        p_small_repair = 0.65 # Probability of small repair for a given year
+        p_small_repair = 0.3 # Probability of small repair for a given year
         p_big_repair = 0.02 # Probability of a big repair for a given year
-        p_no_repair = 0.33 # Probability of no repair needed for a given year
-        repair_occurence = np.random.choice(3, years, p=[p_no_repair, p_small_repair, p_big_repair])
+        p_no_repair = 0.68 # Probability of no repair needed for a given year
     elif scenario.automation_level == 'Medium':
-        p_small_repair = 0.45  # Probability of small repair for a given year
+        p_small_repair = 0.25  # Probability of small repair for a given year
         p_big_repair = 0.01  # Probability of a big repair for a given year
-        p_no_repair = 0.54  # Probability of no repair needed for a given year
-        repair_occurence = np.random.choice(3, years, p=[p_no_repair, p_small_repair, p_big_repair])
+        p_no_repair = 0.74  # Probability of no repair needed for a given year
     elif scenario.automation_level == 'Low':
-        p_small_repair = 0.4  # Probability of small repair for a given year
-        p_big_repair = 0.002  # Probability of a big repair for a given year
-        p_no_repair = 0.598  # Probability of no repair needed for a given year
-        repair_occurence = np.random.choice(3, years, p=[p_no_repair, p_small_repair, p_big_repair])
+        p_small_repair = 0.2  # Probability of small repair for a given year
+        p_big_repair = 0.0  # Probability of a big repair for a given year
+        p_no_repair = 0.8  # Probability of no repair needed for a given year
 
-    repair_occurence = [0, 0, *repair_occurence]
+    small_repair = (scenario.capex_lights + scenario.capex_facilities) * pba.mmms(0,0.03,0.015,0.005)
+    big_repair = (scenario.capex_lights + scenario.capex_facilities) * pba.mmms(0.01,0.1,0.04,0.02)
 
-    repair = []
+    repair_cost = pba.mixture(1, small_repair, big_repair, w=[p_no_repair, p_small_repair, p_big_repair])
+
+    #repair_occurence = [0, 0, *repair_occurence]
+
+    repair = [0, 0]
 
     # repair = bucks*mix(p_small_repair, np.random.beta(0.5, 40), p_big_repair,np.random.beta(1.5,8), p_no_repair,np.random.beta(0,1))
 
-    for y in range(years+1):
-    #
-        if repair_occurence[y] == 1:
-            repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(0.5, 40))
-        elif repair_occurence == 2:
-            repair.append((scenario.capex_lights + scenario.capex_facilities) * np.random.beta(1.5, 8))
-        else:
-            repair.append(0)
+    for y in range(years-1):
+        repair.append(repair_cost)
 
     """ Append all the different repair costs onto one vector
     """
     # repair = (scenario.capex_lights + scenario.capex_facilities) * np.random.beta(1.5, 8))
-    REPAIR.extend(repair)
+    #REPAIR.extend(repair)
     #for y in range(len(repair)):
     #    REPAIR.append(repair[y])
 
@@ -384,28 +458,25 @@ def calc_customer_withdrawal(scenario, years, total_sales):
     if  scenario.business_model == 'Wholesale':
         p_withdrawal = 0.05  # Probability of customer withdrawal for given year
         p_no_withdrawal = 0.95  # Probability of no withdrawal for given year
-        customer_withdrawal_occurrence = np.random.choice(2, years, p=[p_withdrawal, p_no_withdrawal])
+        customer_withdrawal_impact = pba.mmms(0.85,1,0.9,0.02) # IMPACT
     elif scenario.business_model == 'Retail':
-        p_withdrawal = 0.05  # Probability of customer withdrawal for given year
-        p_no_withdrawal = 0.95   # Probability of no withdrawal for given year
-        customer_withdrawal_occurrence = np.random.choice(2, years, p=[p_withdrawal, p_no_withdrawal])
+        p_withdrawal = 0.03  # Probability of customer withdrawal for given year
+        p_no_withdrawal = 0.98   # Probability of no withdrawal for given year
+        customer_withdrawal_impact = pba.mmms(0.9,1,0.95,0.02)#IMPACT
     elif scenario.business_model == 'Hybrid':
-        p_withdrawal = 0.05  # Probability of customer withdrawal for given year
-        p_no_withdrawal = 0.95 # Probability of no withdrawal for given year
-        customer_withdrawal_occurrence = np.random.choice(2, years, p=[p_withdrawal, p_no_withdrawal])
-
-    customer_withdrawal_occurrence = [0, *customer_withdrawal_occurrence]
+        p_withdrawal = 0.075  # Probability of customer withdrawal for given year
+        p_no_withdrawal = 0.925 # Probability of no withdrawal for given year
+        retail = pba.mmms(0.85,1,0.95,0.02)
+        wholesale = pba.mmms(0.8,1,0.9,0.05)
+        hybrid = pba.mixture(retail, wholesale)
+        customer_withdrawal_impact = hybrid # IMPACT
 
     customer_withdrawal = []
-    for y in range(years+1):
-        if customer_withdrawal_occurrence[y] == 1 and scenario.business_model == 'Wholesale':
-            customer_withdrawal.append(total_sales[y] * np.random.beta(5, 10))
-        elif customer_withdrawal_occurrence[y] == 1 and scenario.business_model == 'Retail':
-            customer_withdrawal.append(total_sales[y] * np.random.beta(0.5, 40))
-        elif customer_withdrawal_occurrence[y] == 1 and scenario.business_model == 'Hybrid':
-            customer_withdrawal.append(total_sales[y] * np.random.beta(1, 20))
-        else:
-            customer_withdrawal.append(0)
+
+    customer_withdrawal_pba = pba.mixture(customer_withdrawal_impact, 1, w=[p_withdrawal, p_no_withdrawal])
+
+    for y in range(0, years+1):
+        customer_withdrawal.append(total_sales[y]*customer_withdrawal_pba)
 
     return customer_withdrawal
 #
@@ -430,40 +501,41 @@ def labour_challenges(scenario, years, total_sales, cogs_labour):
         Frequency: Continous after 6 months
         Cause: Low automation, high no. of tiers
     """
+    months_harvest = 1/12
 
     if scenario.automation_level == 'High':
-        p_sabotage = 0.01  # Probability of a labour mistake resulting in lost crop
-        p_extra_cost = 0.05  # Probability of underestimated labour costs
-        p_no_issue = 0.94  # Probability of no problem
-        labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
+        p_sabotage = 0.02  # Probability of a labour mistake resulting in lost crop
+        p_no_sabotage = 1-p_sabotage
+        p_extra_cost = 0.02  # Probability of underestimated labour costs
+        p_no_extra_cost = 1-p_extra_cost  # Probability of no problem
+
     elif scenario.automation_level == 'Medium':
         p_sabotage = 0.03  # Probability of a labour mistake resulting in lost crop
+        p_no_sabotage = 1-p_sabotage
         p_extra_cost = 0.07  # Probability of underestimated labour costs
+        p_no_extra_cost = 1-p_extra_cost  # Probability of no problem
+
         p_no_issue = 0.9  # Probability of no problem
-        labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
     elif scenario.automation_level == 'Low':
         p_sabotage = 0.07  # Probability of a labour mistake resulting in lost crop
+        p_no_sabotage = 1-p_sabotage
         p_extra_cost = 0.15  # Probability of underestimated labour costs
-        p_no_issue = 0.78  # Probability of no problem
-        labour_challenge_occurence = np.random.choice(3, years, p=[p_no_issue, p_sabotage, p_extra_cost])
+        p_no_extra_cost = 1-p_extra_cost  # Probability of no problem
 
-    labour_challenge_occurence = [0, *labour_challenge_occurence]
+    i_extra_cost = pba.mmms(1, 1.8, 1.25, 0.2)
+    i_sabotage = pba.mmms(0.96, 1, 0.93, 0.01)
+
+    sabotage_risk = pba.mixture(i_sabotage, 1, w=[p_sabotage, p_no_sabotage])
+    extra_cost_risk = pba.mixture(i_extra_cost, 1, w=[p_extra_cost, p_no_extra_cost])
 
     labour_damage = []
     labour_extra_cost = []
 
     for y in range(years + 1):
-        if labour_challenge_occurence[y] == 0:
-            labour_damage.append(0)
-            labour_extra_cost.append(0)
-        elif labour_challenge_occurence[y] == 1:
-            labour_damage.append(total_sales[y] * np.random.beta(0.5, 50))
-            labour_extra_cost.append(0)
-        elif labour_challenge_occurence[y] == 2:
-            labour_damage.append(0)
-            labour_extra_cost.append(cogs_labour[y] * np.random.beta(10, 50))
+        total_sales[y] *= sabotage_risk
+        cogs_labour[y] *= extra_cost_risk
 
-    return labour_damage, labour_extra_cost
+    return total_sales, cogs_labour
 
 def reduced_product_quality(scenario):
     """Reduced Product Quality
@@ -528,36 +600,36 @@ def calc_pest_outbreak(scenario, years, waste_adjusted_yields):
         p_no_outbreak = 0.6 # Probability of no pest outbreak for a given year
         pest_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
 
-    pest_occurence = [0, *pest_occurence]
+    if scenario.ipm == 'No':
+        i_pest = pba.mmms(0.8,0.95, 0.92,0.03)
+        print("TRIGGERED")
+    elif scenario.ipm == 'Yes':
+        i_pest = pba.mmms(0.9,0.999, 0.97, 0.015)
+
+    pest_risk = pba.mixture(1, i_pest, w=[p_no_outbreak, p_outbreak])
 
     pest_outbreak =[]
-
-    for y in range(years+1):
-
-        if pest_occurence[y] == 1:
-            if scenario.ipm == 'No':
-                pest_outbreak.append(np.random.beta(60, 0.5))
-            elif scenario.ipm == 'Yes':
-                pest_outbreak.append(np.random.beta(120, 0.3))
-        else:
-            pest_outbreak.append(1)
 
     # w1_risk = [a * b for a, b in zip(w1, pest_outbreak)]
     # w2_risk = [a * b for a, b in zip(w2, pest_outbreak)]
     # w3_risk = [a * b for a, b in zip(w3, pest_outbreak)]
     # w4_risk = [a * b for a, b in zip(w4, pest_outbreak)]
     #
-    w_risks = []
 
-
+    # TO ASSUME INDEPENDANCE To do a+b with independence you need to do a.add(b, method=‘i’)
+    # To ASSUME INDEPENDANCE a*b a.mul(b, method ='i')
+    w_risks2 = []
 
     for wyield in waste_adjusted_yields:
         this_yield = []
         for y in range(years+1):
-            this_yield.append(wyield[y]*(pest_outbreak[y]))
-        w_risks.append(this_yield)
+            if y == 1:
+                this_yield.append(wyield[y])
+            else:
+                this_yield.append(wyield[y]*pest_risk)
+        w_risks2.append(this_yield)
 
-    return w_risks
+    return w_risks2
 
 def competitors_risk():
 #         """Competitor
@@ -571,7 +643,7 @@ def competitors_risk():
 #         """
     return competitors_risk
 
-def calc_power_outage(scenario, years, w1, w2, w3, w4):
+def calc_power_outage(scenario, years, waste_adjusted_yields):
     """RISK: Power Outage
     Notes: A power outage can be caused by:
      - excessive wind generation
@@ -599,44 +671,66 @@ def calc_power_outage(scenario, years, w1, w2, w3, w4):
     """
 
     months_harvest = 1/12
+    two_months_harvest = 2/12
 
-    p_outage = 0.05  # Probability of one power outage for a given year
-    p_two_outage = 0.01  # Probability of two power outages for a given year
-    p_no_outage = 0.94  # Probability of no power outage for a given year
-    power_outage = np.random.choice(3, years+1, p=[p_no_outage, p_outage, p_two_outage])
-    power_outage = [x * months_harvest for x in power_outage]
-    assert len(power_outage) == len(w1), "jmht arrays were of unmatching sizes!"
-    if scenario.electrical_backup == 'No':
+    p_outage = 0.01  # Probability of one power outage for a given year
+    p_no_outage = 0.99  # Probability of no power outage for a given year
+    i_outage = pba.mmms(months_harvest,two_months_harvest, months_harvest, 0.02)
 
-        if scenario.crop1_system == 'Aeroponics':
-            w1_risk = [a * b for a, b in zip(w1, power_outage)]
-        else:
-            w1_risk = w1
-
-        if scenario.crop2_system == 'Aeroponics':
-            w2_risk = [a * b for a, b in zip(w2, power_outage)]
-        else:
-            w2_risk = w2
-
-        if scenario.crop3_system == 'Aeroponics':
-            w3_risk = [a * b for a, b in zip(w3, power_outage)]
-        else:
-            w3_risk = w3
-
-        if scenario.crop4_system == 'Aeroponics':
-            w4_risk = [a * b for a, b in zip(w4, power_outage)]
-        else:
-            w4_risk = w4
-
+    if scenario.electrical_backup == "No" and scenario.crop1_system == "Aeroponics":
+        power_outage = pba.mixture(1, i_outage, w=[p_no_outage, p_outage])
     else:
-        w1_risk = w1
-        w2_risk = w2
-        w3_risk = w3
-        w4_risk = w4
+        power_outage = pba.Pbox(pba.I(1,1))
 
-    return w1_risk, w2_risk, w3_risk, w4_risk
+    # w_risks = []
+    # for w in waste_adjusted_yields:
+    #     w_risks.append([a * b for a, b in zip(w, pathogen_outbreak)])
+    # # HACK!!! THIS NEED TO BE FIXED TO RETURN A LIST
+    # w1_risk, w2_risk, w3_risk, w4_risk = w_risks
+    w_risks2 = []
+    for wyield in waste_adjusted_yields:
+        this_yield = []
+        for y in range(years+1):
+            this_yield.append(power_outage.mul(wyield[y]))
+            #this_yield.append(wyield[y].mul(pathogen_outbreak))
+            #this_yield.append(wyield[y]*pathogen_outbreak)
+        w_risks2.append(this_yield)
 
-def calc_planning_delay(risk_dataframe, timeseries_yearly, years):
+
+
+    # power_outage = [x * months_harvest for x in power_outage]
+    # assert len(power_outage) == len(w1), "jmht arrays were of unmatching sizes!"
+    # if scenario.electrical_backup == 'No':
+    #
+    #     if scenario.crop1_system == 'Aeroponics':
+    #         w1_risk = [a * b for a, b in zip(w1, power_outage)]
+    #     else:
+    #         w1_risk = w1
+    #
+    #     if scenario.crop2_system == 'Aeroponics':
+    #         w2_risk = [a * b for a, b in zip(w2, power_outage)]
+    #     else:
+    #         w2_risk = w2
+    #
+    #     if scenario.crop3_system == 'Aeroponics':
+    #         w3_risk = [a * b for a, b in zip(w3, power_outage)]
+    #     else:
+    #         w3_risk = w3
+    #
+    #     if scenario.crop4_system == 'Aeroponics':
+    #         w4_risk = [a * b for a, b in zip(w4, power_outage)]
+    #     else:
+    #         w4_risk = w4
+    #
+    # else:
+    #     w1_risk = w1
+    #     w2_risk = w2
+    #     w3_risk = w3
+    #     w4_risk = w4
+
+    return w_risks2
+
+def calc_planning_delay(risk_dataframe, timeseries_yearly, years, scenario):
     """RISK: Calculate Planning Delay
         A planning delay results in scaling up from pilot to full-scale farm is delayed by X years
 
@@ -649,13 +743,20 @@ def calc_planning_delay(risk_dataframe, timeseries_yearly, years):
         risk_dataframe (dataframe): updated risk dataframe
     """
 
-    p_delay = 0.15  # Probability of planning permission delay by one year
-    p_no_delay = 0.85  # Probability of no planning permission delay
-    delay_occurence = np.random.choice(2, 1, p=[p_no_delay, p_delay])
+    p_delay = 0.2  # Probability of planning permission delay by one year
+    p_no_delay = 0.8  # Probability of no planning permission delay
+    i_delay = 1/scenario.growing_area_mulitplier
+    i_no_delay = 1
 
-    if delay_occurence == 1:
-        risk_dataframe = risk_dataframe.drop(columns=timeseries_yearly[2])
-        risk_dataframe.insert(loc=2, column=timeseries_yearly[2], value=risk_dataframe.iloc[:,1], allow_duplicates = False)
+    delay_risk = pba.mixture(i_no_delay, i_delay, w=[p_no_delay, p_delay])
+
+    risk_dataframe.loc["Yield Crop 1":"Revenue - Hospitality", "2023-02-01 00:00:00"] *= delay_risk
+    risk_dataframe.loc["Total Revenue":"Total COGS", "2023-02-01 00:00:00"] *= delay_risk
+
+
+    #if delay_occurence == 1:
+    #    risk_dataframe = risk_dataframe.drop(columns=timeseries_yearly[2])
+    #   risk_dataframe.insert(loc=2, column=timeseries_yearly[2], value=risk_dataframe.iloc[:,1], allow_duplicates = False)
 
     return risk_dataframe
 
@@ -1160,3 +1261,6 @@ def probability_df(counter, simulations, columns):
 #             Frequency: After LEDs depreciate
 #             Cause: After LEDs depreciated update better lights
 #         """
+
+'''MIXTURES FOR PBA ANALYSIS'''
+

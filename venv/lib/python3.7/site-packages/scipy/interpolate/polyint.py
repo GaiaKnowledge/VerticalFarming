@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.special import factorial
-
-from scipy._lib._util import _asarray_validated
+from scipy._lib._util import _asarray_validated, float_factorial
 
 
 __all__ = ["KroghInterpolator", "krogh_interpolate", "BarycentricInterpolator",
@@ -13,7 +12,7 @@ def _isscalar(x):
     return np.isscalar(x) or hasattr(x, 'shape') and x.shape == ()
 
 
-class _Interpolator1D(object):
+class _Interpolator1D:
     """
     Common features in univariate interpolation
 
@@ -68,6 +67,11 @@ class _Interpolator1D(object):
         y : array_like
             Interpolated values. Shape is determined by replacing
             the interpolation axis in the original array with the shape of x.
+
+        Notes
+        -----
+        Input values `x` must be convertible to `float` values like `int` 
+        or `float`.
 
         """
         x, x_shape = self._prepare_x(x)
@@ -270,8 +274,9 @@ class KroghInterpolator(_Interpolator1DWithDerivatives):
     For another example, given xi, yi, and a derivative ypi for each
     point, appropriate arrays can be constructed as:
 
+    >>> rng = np.random.default_rng()
     >>> xi = np.linspace(0, 1, 5)
-    >>> yi, ypi = np.random.rand(2, 5)
+    >>> yi, ypi = rng.random((2, 5))
     >>> xi_k, yi_k = np.repeat(xi, 2), np.ravel(np.dstack((yi,ypi)))
     >>> KroghInterpolator(xi_k, yi_k)
 
@@ -299,7 +304,7 @@ class KroghInterpolator(_Interpolator1DWithDerivatives):
             while s <= k and xi[k-s] == xi[k]:
                 s += 1
             s -= 1
-            Vk[0] = self.yi[k]/float(factorial(s))
+            Vk[0] = self.yi[k]/float_factorial(s)
             for i in range(k-s):
                 if xi[i] == xi[k]:
                     raise ValueError("Elements if `xi` can't be equal.")
@@ -344,7 +349,7 @@ class KroghInterpolator(_Interpolator1DWithDerivatives):
             for i in range(1, n-k+1):
                 pi[i] = w[k+i-1]*pi[i-1] + pi[i]
                 cn[k] = cn[k] + pi[i, :, np.newaxis]*cn[k+i]
-            cn[k] *= factorial(k)
+            cn[k] *= float_factorial(k)
 
         cn[n, :, :] = 0
         return cn[:der]

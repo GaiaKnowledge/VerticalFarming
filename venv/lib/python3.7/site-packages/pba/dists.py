@@ -180,10 +180,10 @@ def lognormal(mean, var, steps = 200):
     if var.__class__.__name__ != 'Interval':
         var = Interval(var,var)
 
-    bound0 = sps.lognorm.ppf(x, mean.left(), var.left())
-    bound1 = sps.lognorm.ppf(x, mean.right(), var.left())
-    bound2 = sps.lognorm.ppf(x, mean.left(), var.right())
-    bound3 = sps.lognorm.ppf(x, mean.right(), var.right())
+    bound0 = sps.lognorm.ppf(x, mean.left, var.left)
+    bound1 = sps.lognorm.ppf(x, mean.right, var.left)
+    bound2 = sps.lognorm.ppf(x, mean.left, var.right)
+    bound3 = sps.lognorm.ppf(x, mean.right, var.right)
 
     Left = [min(bound0[i],bound1[i],bound2[i],bound3[i]) for i in range(steps)]
     Right = [max(bound0[i],bound1[i],bound2[i],bound3[i]) for i in range(steps)]
@@ -195,10 +195,10 @@ def lognormal(mean, var, steps = 200):
         Right,
         steps = steps,
         shape='lognormal',
-        mean_left=mean.left(),
-        mean_right=mean.right(),
-        var_left=var.left(),
-        var_right=var.right())
+        mean_left=mean.left,
+        mean_right=mean.right,
+        var_left=var.left,
+        var_right=var.right)
 lognorm = lognormal
 
 def alpha(*args, steps = 200):
@@ -214,10 +214,10 @@ def alpha(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'alpha',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def anglit(*args, steps = 200):
@@ -233,10 +233,10 @@ def anglit(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'anglit',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def arcsine(*args, steps = 200):
@@ -252,10 +252,10 @@ def arcsine(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'arcsine',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def argus(*args, steps = 200):
@@ -271,10 +271,10 @@ def argus(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'argus',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def beta(*args, steps = 200):
@@ -290,10 +290,10 @@ def beta(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'beta',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def betaprime(*args, steps = 200):
@@ -309,10 +309,10 @@ def betaprime(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'betaprime',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def bradford(*args, steps = 200):
@@ -328,10 +328,10 @@ def bradford(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'bradford',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def burr(*args, steps = 200):
@@ -347,10 +347,10 @@ def burr(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'burr',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def burr12(*args, steps = 200):
@@ -366,10 +366,10 @@ def burr12(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'burr12',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def cauchy(*args, steps = 200):
@@ -385,10 +385,10 @@ def cauchy(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'cauchy',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def chi(*args, steps = 200):
@@ -404,10 +404,10 @@ def chi(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'chi',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def chi2(*args, steps = 200):
@@ -423,10 +423,10 @@ def chi2(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'chi2',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def cosine(*args, steps = 200):
@@ -442,10 +442,10 @@ def cosine(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'cosine',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def crystalball(*args, steps = 200):
@@ -461,10 +461,10 @@ def crystalball(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'crystalball',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def dgamma(*args, steps = 200):
@@ -480,10 +480,10 @@ def dgamma(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'dgamma',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def dweibull(*args, steps = 200):
@@ -499,10 +499,10 @@ def dweibull(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'dweibull',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def erlang(*args, steps = 200):
@@ -518,10 +518,10 @@ def erlang(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'erlang',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def expon(*args, steps = 200):
@@ -537,10 +537,10 @@ def expon(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'expon',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def exponnorm(*args, steps = 200):
@@ -556,10 +556,10 @@ def exponnorm(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'exponnorm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def exponweib(*args, steps = 200):
@@ -575,10 +575,10 @@ def exponweib(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'exponweib',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def exponpow(*args, steps = 200):
@@ -594,10 +594,10 @@ def exponpow(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'exponpow',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def f(*args, steps = 200):
@@ -613,10 +613,10 @@ def f(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'f',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def fatiguelife(*args, steps = 200):
@@ -632,10 +632,10 @@ def fatiguelife(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'fatiguelife',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def fisk(*args, steps = 200):
@@ -651,10 +651,10 @@ def fisk(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'fisk',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def foldcauchy(*args, steps = 200):
@@ -670,10 +670,10 @@ def foldcauchy(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'foldcauchy',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def foldnorm(mu,s, steps = 200):
@@ -728,10 +728,10 @@ def foldnorm(mu,s, steps = 200):
           Right,
           steps      = steps,
           shape      = 'foldnorm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 # def frechet_r(*args, steps = 200):
@@ -747,10 +747,10 @@ def foldnorm(mu,s, steps = 200):
 #           Right,
 #           steps      = steps,
 #           shape      = 'frechet_r',
-#           mean_left  = mean.left(),
-#           mean_right = mean.right(),
-#           var_left   = var.left(),
-#           var_right  = var.right()
+#           mean_left  = mean.left,
+#           mean_right = mean.right,
+#           var_left   = var.left,
+#           var_right  = var.right
 #           )
 
 # def frechet_l(*args, steps = 200):
@@ -766,10 +766,10 @@ def foldnorm(mu,s, steps = 200):
 #           Right,
 #           steps      = steps,
 #           shape      = 'frechet_l',
-#           mean_left  = mean.left(),
-#           mean_right = mean.right(),
-#           var_left   = var.left(),
-#           var_right  = var.right()
+#           mean_left  = mean.left,
+#           mean_right = mean.right,
+#           var_left   = var.left,
+#           var_right  = var.right
 #           )
 
 def genlogistic(*args, steps = 200):
@@ -785,10 +785,10 @@ def genlogistic(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'genlogistic',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def gennorm(*args, steps = 200):
@@ -804,10 +804,10 @@ def gennorm(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'gennorm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def genpareto(*args, steps = 200):
@@ -823,10 +823,10 @@ def genpareto(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'genpareto',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def genexpon(*args, steps = 200):
@@ -842,10 +842,10 @@ def genexpon(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'genexpon',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def genextreme(*args, steps = 200):
@@ -861,10 +861,10 @@ def genextreme(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'genextreme',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def gausshyper(*args, steps = 200):
@@ -880,10 +880,10 @@ def gausshyper(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'gausshyper',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def gamma(*args, steps = 200):
@@ -899,10 +899,10 @@ def gamma(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'gamma',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def gengamma(*args, steps = 200):
@@ -918,10 +918,10 @@ def gengamma(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'gengamma',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def genhalflogistic(*args, steps = 200):
@@ -937,10 +937,10 @@ def genhalflogistic(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'genhalflogistic',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def geninvgauss(*args, steps = 200):
@@ -956,10 +956,10 @@ def geninvgauss(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'geninvgauss',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def gilbrat(*args, steps = 200):
@@ -975,10 +975,10 @@ def gilbrat(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'gilbrat',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def gompertz(*args, steps = 200):
@@ -994,10 +994,10 @@ def gompertz(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'gompertz',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def gumbel_r(*args, steps = 200):
@@ -1013,10 +1013,10 @@ def gumbel_r(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'gumbel_r',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def gumbel_l(*args, steps = 200):
@@ -1032,10 +1032,10 @@ def gumbel_l(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'gumbel_l',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def halfcauchy(*args, steps = 200):
@@ -1051,10 +1051,10 @@ def halfcauchy(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'halfcauchy',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def halflogistic(*args, steps = 200):
@@ -1070,10 +1070,10 @@ def halflogistic(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'halflogistic',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def halfnorm(*args, steps = 200):
@@ -1089,10 +1089,10 @@ def halfnorm(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'halfnorm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def halfgennorm(*args, steps = 200):
@@ -1108,10 +1108,10 @@ def halfgennorm(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'halfgennorm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def hypsecant(*args, steps = 200):
@@ -1127,10 +1127,10 @@ def hypsecant(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'hypsecant',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def invgamma(*args, steps = 200):
@@ -1146,10 +1146,10 @@ def invgamma(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'invgamma',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def invgauss(*args, steps = 200):
@@ -1165,10 +1165,10 @@ def invgauss(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'invgauss',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def invweibull(*args, steps = 200):
@@ -1184,10 +1184,10 @@ def invweibull(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'invweibull',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def johnsonsb(*args, steps = 200):
@@ -1203,10 +1203,10 @@ def johnsonsb(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'johnsonsb',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def johnsonsu(*args, steps = 200):
@@ -1222,10 +1222,10 @@ def johnsonsu(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'johnsonsu',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def kappa4(*args, steps = 200):
@@ -1241,10 +1241,10 @@ def kappa4(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'kappa4',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def kappa3(*args, steps = 200):
@@ -1260,10 +1260,10 @@ def kappa3(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'kappa3',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def ksone(*args, steps = 200):
@@ -1279,10 +1279,10 @@ def ksone(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'ksone',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def kstwobign(*args, steps = 200):
@@ -1298,10 +1298,10 @@ def kstwobign(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'kstwobign',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def laplace(*args, steps = 200):
@@ -1317,10 +1317,10 @@ def laplace(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'laplace',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def levy(*args, steps = 200):
@@ -1336,10 +1336,10 @@ def levy(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'levy',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def levy_l(*args, steps = 200):
@@ -1355,10 +1355,10 @@ def levy_l(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'levy_l',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def levy_stable(*args, steps = 200):
@@ -1374,10 +1374,10 @@ def levy_stable(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'levy_stable',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def logistic(*args, steps = 200):
@@ -1393,10 +1393,10 @@ def logistic(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'logistic',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def loggamma(*args, steps = 200):
@@ -1412,10 +1412,10 @@ def loggamma(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'loggamma',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def loglaplace(*args, steps = 200):
@@ -1431,10 +1431,10 @@ def loglaplace(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'loglaplace',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def lognorm(*args, steps = 200):
@@ -1450,10 +1450,10 @@ def lognorm(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'lognorm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def loguniform(*args, steps = 200):
@@ -1469,10 +1469,10 @@ def loguniform(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'loguniform',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def lomax(*args, steps = 200):
@@ -1488,10 +1488,10 @@ def lomax(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'lomax',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def maxwell(*args, steps = 200):
@@ -1507,10 +1507,10 @@ def maxwell(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'maxwell',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def mielke(*args, steps = 200):
@@ -1526,10 +1526,10 @@ def mielke(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'mielke',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def moyal(*args, steps = 200):
@@ -1545,10 +1545,10 @@ def moyal(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'moyal',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def nakagami(*args, steps = 200):
@@ -1564,10 +1564,10 @@ def nakagami(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'nakagami',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def ncx2(*args, steps = 200):
@@ -1583,10 +1583,10 @@ def ncx2(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'ncx2',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def ncf(*args, steps = 200):
@@ -1602,10 +1602,10 @@ def ncf(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'ncf',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def nct(*args, steps = 200):
@@ -1621,10 +1621,10 @@ def nct(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'nct',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def norm(*args, steps = 200):
@@ -1640,10 +1640,10 @@ def norm(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'norm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def norminvgauss(*args, steps = 200):
@@ -1659,10 +1659,10 @@ def norminvgauss(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'norminvgauss',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def pareto(*args, steps = 200):
@@ -1678,10 +1678,10 @@ def pareto(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'pareto',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def pearson3(*args, steps = 200):
@@ -1697,10 +1697,10 @@ def pearson3(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'pearson3',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def powerlaw(*args, steps = 200):
@@ -1716,10 +1716,10 @@ def powerlaw(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'powerlaw',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def powerlognorm(*args, steps = 200):
@@ -1735,10 +1735,10 @@ def powerlognorm(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'powerlognorm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def powernorm(*args, steps = 200):
@@ -1754,10 +1754,10 @@ def powernorm(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'powernorm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def rdist(*args, steps = 200):
@@ -1773,10 +1773,10 @@ def rdist(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'rdist',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def rayleigh(*args, steps = 200):
@@ -1792,10 +1792,10 @@ def rayleigh(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'rayleigh',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def rice(*args, steps = 200):
@@ -1811,10 +1811,10 @@ def rice(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'rice',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def recipinvgauss(*args, steps = 200):
@@ -1830,10 +1830,10 @@ def recipinvgauss(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'recipinvgauss',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def semicircular(*args, steps = 200):
@@ -1849,10 +1849,10 @@ def semicircular(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'semicircular',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def skewnorm(*args, steps = 200):
@@ -1868,10 +1868,10 @@ def skewnorm(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'skewnorm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def t(*args, steps = 200):
@@ -1887,10 +1887,10 @@ def t(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 't',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def trapz(a,b,c,d , steps = 200):
@@ -1927,10 +1927,10 @@ def triang(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'triang',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def truncexpon(*args, steps = 200):
@@ -1946,10 +1946,10 @@ def truncexpon(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'truncexpon',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def truncnorm(*args, steps = 200):
@@ -1965,10 +1965,10 @@ def truncnorm(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'truncnorm',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def tukeylambda(*args, steps = 200):
@@ -1984,10 +1984,10 @@ def tukeylambda(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'tukeylambda',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 
@@ -2000,8 +2000,8 @@ def uniform(a, b, steps = 200):
     if b.__class__.__name__ != 'Interval':
         b = Interval(b,b)
 
-    Left = np.linspace(a.left(),b.left())
-    Right = np.linspace(a.right(),b.right())
+    Left = np.linspace(a.left,b.left)
+    Right = np.linspace(a.right,b.right)
 
     mean = 0.5 * (a+b)
     var = ((b-a)**2 )/12
@@ -2011,10 +2011,10 @@ def uniform(a, b, steps = 200):
           Right,
           steps      = steps,
           shape      = 'uniform',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def vonmises(*args, steps = Pbox.STEPS):
@@ -2030,10 +2030,10 @@ def vonmises(*args, steps = Pbox.STEPS):
           Right,
           steps      = steps,
           shape      = 'vonmises',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def vonmises_line(*args, steps = 200):
@@ -2049,10 +2049,10 @@ def vonmises_line(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'vonmises_line',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def wald(*args, steps = 200):
@@ -2068,10 +2068,10 @@ def wald(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'wald',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def weibull_min(*args, steps = 200):
@@ -2087,10 +2087,10 @@ def weibull_min(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'weibull_min',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def weibull_max(*args, steps = 200):
@@ -2106,10 +2106,10 @@ def weibull_max(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'weibull_max',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def wrapcauchy(*args, steps = 200):
@@ -2125,10 +2125,10 @@ def wrapcauchy(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'wrapcauchy',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def bernoulli(*args, steps = 200):
@@ -2144,10 +2144,10 @@ def bernoulli(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'bernoulli',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def betabinom(*args, steps = 200):
@@ -2163,10 +2163,10 @@ def betabinom(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'betabinom',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def binom(*args, steps = 200):
@@ -2182,10 +2182,10 @@ def binom(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'binom',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def boltzmann(*args, steps = 200):
@@ -2201,10 +2201,10 @@ def boltzmann(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'boltzmann',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def dlaplace(*args, steps = 200):
@@ -2220,10 +2220,10 @@ def dlaplace(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'dlaplace',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def geom(*args, steps = 200):
@@ -2239,10 +2239,10 @@ def geom(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'geom',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def hypergeom(*args, steps = 200):
@@ -2258,10 +2258,10 @@ def hypergeom(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'hypergeom',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def logser(*args, steps = 200):
@@ -2277,10 +2277,10 @@ def logser(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'logser',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def nbinom(*args, steps = 200):
@@ -2296,10 +2296,10 @@ def nbinom(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'nbinom',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def planck(*args, steps = 200):
@@ -2315,10 +2315,10 @@ def planck(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'planck',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def poisson(*args, steps = 200):
@@ -2334,10 +2334,10 @@ def poisson(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'poisson',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def randint(*args, steps = 200):
@@ -2353,10 +2353,10 @@ def randint(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'randint',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def skellam(*args, steps = 200):
@@ -2372,10 +2372,10 @@ def skellam(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'skellam',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def zipf(*args, steps = 200):
@@ -2391,10 +2391,10 @@ def zipf(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'zipf',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 def yulesimon(*args, steps = 200):
@@ -2410,10 +2410,10 @@ def yulesimon(*args, steps = 200):
           Right,
           steps      = steps,
           shape      = 'yulesimon',
-          mean_left  = mean.left(),
-          mean_right = mean.right(),
-          var_left   = var.left(),
-          var_right  = var.right()
+          mean_left  = mean.left,
+          mean_right = mean.right,
+          var_left   = var.left,
+          var_right  = var.right
           )
 
 

@@ -21,7 +21,7 @@ MONTHS_IN_YEAR = 12
 DAYS_IN_YEAR = 365.25
 
 # Input File
-def get_scenario():
+def get_scenario(input_filepath='./Current_Financial_Model.xlsx'):
     """Get Scenario
         Notes: Scenario is extracted from /Users/Francis/PycharmProjects/VerticalFarming/Current_Financial_Model.xlsx
         This should be edited according to the file path and name of the saved excel model.
@@ -32,7 +32,6 @@ def get_scenario():
     To Do:
     """
 
-    input_filepath = './Current_Financial_Model.xlsx'  # Make a copy and call spreadsheet this name
     inputs = pd.read_excel(input_filepath, index_col=0).to_dict()
     inputs = inputs['Inputs']
     zipgrow_growing_area = 24.481536
@@ -201,7 +200,7 @@ def get_scenario():
 
     return scenario
 
-def export_results(financial_annual_overview, financial_summary, risk_dataframe, p_box):
+def export_results(financial_annual_overview, financial_summary, risk_dataframe, p_box, filename='results.xlsx'):
     """Export results function
         Notes: Defines job roles and attributes
 
@@ -210,7 +209,7 @@ def export_results(financial_annual_overview, financial_summary, risk_dataframe,
          financial_summary (dataframe): A financial summary over the analysis period
          risk_dataframe (dataframe):A annual financial overview of the analysis period with risk included
      """
-    writer = pd.ExcelWriter('results.xlsx', engine='xlsxwriter')
+    writer = pd.ExcelWriter(filename, engine='xlsxwriter')
     financial_summary.to_excel(writer, sheet_name='Summary')
     financial_annual_overview.to_excel(writer, sheet_name='Overview')
 
@@ -292,6 +291,15 @@ def get_staff_list(scenario):
 
      To Do:
      1. Add a staff list
+     2. Add name
+     3. job_role
+     4. salary
+     5. count_pilot
+     6. count_full
+     7. category
+     8. wage
+     9. hours
+     10. hours_full):
      """
 
     # Staff
@@ -532,26 +540,25 @@ def calc_adjustment_factors(scenario, p_box):
     """
 
     # Yield adjustment factors
-    if p_box == 'no':
-        factor_table =  pd.DataFrame({'High': [1, 1, 1, 1, 'n/a'],
+    factor_table =  pd.DataFrame({'High': [1, 1, 1, 1, 'n/a'],
                                   'Medium': [0.9, 0.9, 0.9, 0.97, 'n/a'],
                                   'Low': [0.6, 0.85, 0.85, 0.95, 'n/a'],
                                   'Yes': ['n/a', 'n/a', 'n/a', 'n/a', 1],
                                     'No':['n/a', 'n/a', 'n/a', 'n/a', 0.9]})
-        factor_table.index = ['Light Control', 'Climate Contol', 'Nutrient Control', 'Air Conditioning', 'CO2 Enrichment']
+    factor_table.index = ['Light Control', 'Climate Contol', 'Nutrient Control', 'Air Conditioning', 'CO2 Enrichment']
 
-        light_factor = factor_table.loc['Light Control', scenario.lighting_control]
-        temp_factor = factor_table.loc['Climate Contol', scenario.climate_control]
-        nutrient_factor = factor_table.loc['Nutrient Control', scenario.nutrient_control]
-        co2_factor = factor_table.loc['CO2 Enrichment', scenario.co2_enrichment]
+    light_factor = factor_table.loc['Light Control', scenario.lighting_control]
+    temp_factor = factor_table.loc['Climate Contol', scenario.climate_control]
+    nutrient_factor = factor_table.loc['Nutrient Control', scenario.nutrient_control]
+    co2_factor = factor_table.loc['CO2 Enrichment', scenario.co2_enrichment]
 
-    elif p_box == 'yes':
-        factor_table =  pd.DataFrame({'High': [pba.Pbox([0.95,1]), pba.Pbox([0.95,1]), pba.Pbox([0.95,1]), pba.Pbox([0.97,1]), 'n/a'],
-                                   'Medium': [pba.Pbox([0.75,0.95]), pba.Pbox([0.85,0.95]), pba.Pbox([0.85,0.95]), pba.Pbox([0.96,0.97]), 'n/a'],
-                                   'Low': [pba.Pbox([0.6,0.75]), pba.Pbox([0.85,0.95]), pba.Pbox([0.85,0.95]), pba.Pbox([0.95,0.96]), 'n/a'],
-                                   'Yes': ['n/a', 'n/a', 'n/a', 'n/a', pba.Pbox([0.85,1])],
-                                       'No':['n/a', 'n/a', 'n/a', 'n/a', pba.Pbox([0.85,00.95])]})
-        factor_table.index = ['Light Control', 'Climate Contol', 'Nutrient Control', 'Air Conditioning', 'CO2 Enrichment']
+    # elif p_box == 'yes':
+    #     factor_table =  pd.DataFrame({'High': [1, 1, 1, 1, 'n/a'],
+    #                                'Medium': [pba.Pbox([0.88,0.92]), pba.Pbox([0.88,0.92]), pba.Pbox([0.88,0.92]), pba.Pbox([0.96,0.98]), 'n/a'],
+    #                                'Low': [pba.Pbox([0.58,0.62]), pba.Pbox([0.88,0.92]), pba.Pbox([0.88,0.92]), pba.Pbox([0.95,0.96]), 'n/a'],
+    #                                'Yes': ['n/a', 'n/a', 'n/a', 'n/a', pba.Pbox([0.98,1])],
+    #                                    'No':['n/a', 'n/a', 'n/a', 'n/a', pba.Pbox([0.88,0.92])]})
+    #     factor_table.index = ['Light Control', 'Climate Contol', 'Nutrient Control', 'Air Conditioning', 'CO2 Enrichment']
         # factor_table = pd.DataFrame({'High': [1, 1, 1, 1, 'n/a'],
         #                              'Medium': [0.9, 0.9, 0.9, 0.97, 'n/a'],
         #                              'Low': [0.6, 0.85, 0.85, 0.95, 'n/a'],
@@ -560,10 +567,10 @@ def calc_adjustment_factors(scenario, p_box):
         # factor_table.index = ['Light Control', 'Climate Contol', 'Nutrient Control', 'Air Conditioning',
         #                       'CO2 Enrichment']
 
-        light_factor = factor_table.loc['Light Control', scenario.lighting_control]
-        temp_factor = factor_table.loc['Climate Contol', scenario.climate_control]
-        nutrient_factor = factor_table.loc['Nutrient Control', scenario.nutrient_control]
-        co2_factor = factor_table.loc['CO2 Enrichment', scenario.co2_enrichment]
+        # light_factor = factor_table.loc['Light Control', scenario.lighting_control]
+        # temp_factor = factor_table.loc['Climate Contol', scenario.climate_control]
+        # nutrient_factor = factor_table.loc['Nutrient Control', scenario.nutrient_control]
+        # co2_factor = factor_table.loc['CO2 Enrichment', scenario.co2_enrichment]
 
 
     return light_factor, temp_factor, nutrient_factor, co2_factor
@@ -571,7 +578,7 @@ def calc_adjustment_factors(scenario, p_box):
 def calc_adjusted_yield(crop_yields, light_factor, temp_factor, nutrient_factor, co2_factor):
     adjusted_yields = []
     for cyield in crop_yields:
-        adjusted_yields.append(np.array(cyield, dtype=int) * light_factor * temp_factor * nutrient_factor * co2_factor)
+        adjusted_yields.append(np.array(cyield) * light_factor * temp_factor * nutrient_factor * co2_factor)
     return adjusted_yields
 
 def calc_waste_adjusted_yield(scenario, crop_yields, years, p_box):
@@ -597,8 +604,8 @@ def calc_waste_adjusted_yield(scenario, crop_yields, years, p_box):
     if p_box == 'no':
         multiply_factor = 0.5
     if p_box == 'yes':
-        multiply_factor = pba.Pbox(pba.I(0.5, 0.75))
-        #multiply_factor = 0.5
+        #multiply_factor = pba.Pbox(pba.I(0.48, 0.52))
+        multiply_factor = pba.Pbox(pba.I(1,1))
 
 
     high = [0]
@@ -931,7 +938,7 @@ def calc_nutrients_and_num_plants(scenario, cogs_media, adjusted_yields, years):
         cogs_nutrients.append(nutrient_cost)
         cogs_seeds_nutrients[y] += cogs_nutrients[y]
 
-    nutrient_consumption = [1000] * 16 # Needs to be changed
+    nutrient_consumption = [0] * 16 # Needs to be changed
 
     return cogs_seeds_nutrients, nutrient_consumption, total_no_of_plants
 
@@ -986,7 +993,7 @@ def calc_electricity(scenario, gp, avg_photoperiod, light, years, HVAC_multiplie
     cogs_electricity = [i * scenario.electricity_price for i in electricity_consumption]
     return cogs_electricity, electricity_consumption
 
-def calc_water(scenario, years):
+def calc_water(scenario, years, waste_adjusted_yields, water_use):
     """Calculate Water costs Function
 
     Args:
@@ -999,12 +1006,29 @@ def calc_water(scenario, years):
     """
     water_consumption = [0]
 
-    for y in range(years+1):
-        if y == 1:
-            water_consumption.append(scenario.system_quantity * 0.95 * DAYS_IN_YEAR + (1900*12))
-        elif y > 1:
-            water_consumption.append((scenario.system_quantity * 0.95 * DAYS_IN_YEAR + (1900*12)) * scenario.growing_area_mulitplier)
+    if water_use > 0:
+        for y in range(years+1):
+            if y == 1:
+                water_consumption.append(water_use * 12) #Months in year
+            elif y > 1:
+                water_consumption.append((water_use * 12) * scenario.growing_area_mulitplier)
+    else:
 
+        if scenario.system_type == 'ZipRack':
+            for y in range(years+1):
+                if y == 1:
+                    water_consumption.append(scenario.system_quantity * 0.95 * DAYS_IN_YEAR + (1900*12))
+                elif y > 1:
+                    water_consumption.append((scenario.system_quantity * 0.95 * DAYS_IN_YEAR + (1900*12)) * scenario.growing_area_mulitplier)
+        else:
+            water_consumption = []
+            for y in range(years + 1):
+                water_consumption_per = 0
+                for i, w in enumerate(waste_adjusted_yields):
+                    water_consumption_per += (w[y] * pba.N(20,3.8))
+                water_consumption.append(water_consumption_per)
+
+        "Check calc_water: water consumption is a best guess from [Barbosa] for lettuce"
     cogs_water = [i * scenario.water_price for i in water_consumption]
 
     return cogs_water, water_consumption
@@ -1065,7 +1089,7 @@ def calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_pe
 
     return opex_salaries
 
-def calc_other_costs(scenario, opex_staff, years):
+def calc_other_costs(scenario, opex_staff, repairs, years):
     """Calculate Other costs Function
 
     Args:
@@ -1083,6 +1107,10 @@ def calc_other_costs(scenario, opex_staff, years):
             opex_other_costs.append(scenario.other_costs_pilot * opex_staff[y])
         elif y > 1:
             opex_other_costs.append(scenario.other_costs_full * opex_staff[y])
+    if len(repairs) == years+1:
+        zipped_list = zip(opex_other_costs, repairs)
+        opex_other_costs = [x + y for (x,y) in zipped_list]
+
     return opex_other_costs
 
 def calc_insurance(scenario, years):
@@ -1281,37 +1309,40 @@ def calc_financial_balance(financial_annual_overview, scenario, years,p_box):
     starting_balance1 = initial_capital + scenario.grants_rev_y1 + financial_annual_overview.iloc[30,1] - (scenario.capex_full - scenario.capex_pilot)
     starting_balance2 = starting_balance1 + financial_annual_overview.iloc[30,2] + financial_annual_overview.iloc[9,2]
     financial_balance = [initial_capital, starting_balance1, starting_balance2]
-    financial_balance_min_max = copy.copy(financial_balance)
+    #financial_balance_min_max = copy.copy(financial_balance)
 
-    a=financial_balance[2]
-    b=financial_annual_overview.iloc[30,3]
-    c = a + b
+    #a=financial_balance[2]
+    #a_construct = pba.Pbox(pba.I(56468.866, 183360.6359), mean_left=79505.3252, mean_right=155835.0848, var_left=0.0,
+    #         var_right=2642612685.3895)
+    #b_construct = pba.Pbox(pba.I(-40720.8877, 50358.8567), mean_left=-17495.8924, mean_right=22480.0451, var_left=181607172.5384, var_right=256631605.2608)
+
+    #b=financial_annual_overview.iloc[30,3]
+
     #d = pba.Pbox([min(a) + min(b),max(a)+max(b)])
-    print(c)
-    print(financial_balance[2])
-    print(financial_annual_overview.iloc[30,3])
-    print(pba.Pbox(pba.I(64776, 1097624))+pba.Pbox(pba.I(-334682.47, 1157849.5204)))
+    #print(financial_balance[2])
+    #print(financial_annual_overview.iloc[30,3])
     #print(d)
-    print("WHY ARE THESE NUMBERS NOT THE SAME (above/below)")
-    print(financial_balance[2]+financial_annual_overview.iloc[30,3])
+    #print("WHY ARE THESE NUMBERS NOT THE SAME (above/below)")
+    #print(financial_balance[2]+financial_annual_overview.iloc[30,3])
 
     if p_box == 'yes':
         for y in range(2, years):
             b = financial_balance[y]
             p = financial_annual_overview.iloc[30,y+1]
             g = financial_annual_overview.iloc[9,y+1]
+            #new_balance = b + p + g
             #b_max.append(max(financial_balance[y]))
             #p_max.append(max(financial_annual_overview.iloc[30,y+1]))
             #g_max.append(max(financial_annual_overview.iloc[9,y+1]))
             # New balance = current financial balance + net profit + grants
             """THIS IS A TEMP HACK"""
-            new_balance_min_max = pba.Pbox([min(b) + min(p) + g, max(b) + max(p)+ g])
+            #new_balance_min_max = pba.Pbox([min(b) + min(p) + g, max(b) + max(p)+ g])
             new_balance = financial_balance[y] + financial_annual_overview.iloc[30,y+1] + financial_annual_overview.iloc[9,y+1]
-            financial_balance_min_max.append(new_balance_min_max)
+            #financial_balance_min_max.append(new_balance_min_max)
             financial_balance.append(new_balance)
-        print(financial_balance[3])
-        print("TEMP HACK THE FINANCIAL BALANCE GRAPH SHOULD LOOK LIKE THIS ")
-        print(financial_balance)
+        #print(financial_balance[3])
+        #print("TEMP HACK THE FINANCIAL BALANCE GRAPH SHOULD LOOK LIKE THIS ")
+        #print(financial_balance)
         financial_annual_overview.loc['Financial Balance'] = financial_balance
     elif p_box == 'no':
         for y in range(2, years):
@@ -1320,7 +1351,7 @@ def calc_financial_balance(financial_annual_overview, scenario, years,p_box):
         financial_annual_overview.loc['Financial Balance'] = financial_balance
         financial_balance_min_max = 0
 
-    return financial_annual_overview, financial_balance, financial_balance_min_max
+    return financial_annual_overview, financial_balance
 
 # Financial Dataframe Construction
 
@@ -1719,3 +1750,7 @@ def plot_radar_chart(dataframe, ax):
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), ncol=2)
 
     return ax
+
+def truncate(n, decimals=0):
+    multiplier = 10 ** decimals
+    return int(n * multiplier) / multiplier

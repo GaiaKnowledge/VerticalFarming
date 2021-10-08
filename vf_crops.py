@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import pba
 
 class Crops(object):
     def __init__(self, plant, ppfd, par, photoperiod, harvest_cycle, dry_mass, dm_fm, nft, drip,
@@ -143,11 +144,15 @@ def get_crop(crop_type):
     if crop_type == 'Basil - Lemon':
         crop = Crops('Basil - Lemon', 'n/a',	'n/a',	14,	42,	'n/a', 'n/a', 'n/a', 13.067,	'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 'n/a', 0.03, 0.97, 'herbs')
     elif crop_type == 'Lettuce (Farm Urban Mix)':
-        crop = Crops('Lettuce (Farm Urban Mix)',	0,	0,	16,	35,	0,	0,	0,	40.33754,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0.03, 0.97, 'leafy greens')
+        crop = Crops('Lettuce (Farm Urban Mix)',	0,	0,	16,	35,	0,	0,	0, pba.norm(45, 2),# 52.57, #pba.norm(52.57, 3),	  #40.33754,
+                     0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0.03, 0.97, 'leafy greens')
     elif crop_type == 'Basil - Genovese':
         crop = Crops('Basil - Genovese',	0,	0,	14,	42,	0,	0,	34.33833756,	9.802857143,	35.67186965,	33.33830224,	33.33830224, 0,	0,	16.66892363,	0,	0,	0,	0,	0,	0,	0,	0,	0.03, 0.97, 'herbs')
     elif crop_type == 'None':
         crop = Crops('none',	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0,	0, 1, 'n/a')
+    # JAPANESE LETTUCE HEADS HERE
+    elif crop_type == 'Lettuce - heads':
+        crop = Crops('Lettuce - heads', 0	,0	,16, 35	,0,	0, 61.064,	0,	31.60393706,	29.5365301,	29.5365301,	0,	0,	14.76849254,	0,	0,	0,	0,	0,	0,	0,0,0.01,	0.9,	'leafy greens')
     else:
         raise RuntimeError(f"Unknown crop: {crop_type}")
     return crop
@@ -181,6 +186,8 @@ def get_media(media_type):
         media = Media('Peat', 0.02) #INCORRECT
     elif media_type == 'Cococoir':
         media = Media('Coco coir', 0.02) #INCORRECT
+    elif media_type == 'Sponge':
+        media = Media('Sponge', 0.01)
     else:
         raise RuntimeError(f"Unknown media: {media_type}")
     return media

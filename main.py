@@ -91,6 +91,7 @@ files = os.listdir(cwd)  # Get all the files in that directory
 years = 15 # Time series length !!UP TO 20!!
 simulations = 50
 p_box = "no"
+repairs =[]
 
 #Scenario
 scenario = get_scenario()
@@ -137,7 +138,7 @@ cogs_water, water_consumption = calc_water(scenario, years)
 
 opex_rent = calc_rent(scenario, years)
 opex_salaries = calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_person, years)
-opex_other_costs = calc_other_costs(scenario, opex_salaries, years)
+opex_other_costs = calc_other_costs(scenario, opex_salaries, repairs, years)
 opex_insurance = calc_insurance(scenario, years)
 opex_distribution = calc_distribution(scenario, years)
 
@@ -153,7 +154,7 @@ financial_annual_overview = extra_to_df(financial_annual_overview, loan_repaymen
 roi = calc_roi(scenario, financial_annual_overview, years)
 financial_annual_overview.loc['Return on Investment'] = roi
 investment_balance, payback_period = calc_payback_period(scenario, financial_annual_overview, years, p_box)
-financial_annual_overview, financial_balance, _ = calc_financial_balance(financial_annual_overview, scenario, years, p_box)
+financial_annual_overview, financial_balance = calc_financial_balance(financial_annual_overview, scenario, years, p_box)
 
 financial_summary = build_financial_summary(financial_annual_overview, investment_balance, roi, timeseries_yearly)
 
@@ -210,7 +211,7 @@ for s in range(simulations):
 
     risk_dataframe = opex_to_df(risk_dataframe, opex_rent, opex_salaries, opex_other_costs,
                                                 opex_insurance, opex_distribution)
-    risk_dataframe.loc['OPEX - Other Costs'] += repair
+    #risk_dataframe.loc['OPEX - Other Costs'] += repair
     risk_dataframe = extra_to_df(risk_dataframe, loan_repayments, loan_balance, scenario,
                                                  depreciation)
 

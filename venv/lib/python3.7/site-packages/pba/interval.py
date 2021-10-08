@@ -20,77 +20,77 @@ class Interval():
     Parameters
     ----------
     left : numeric
-        Left side of interval
+        left side of interval
     right : numeric
-        Right side of interval
+        right side of interval
     Attributes
     ----------
-    Left : numeric
-        Left side of interval
-    Right : numeric
-        Right side of interval
+    left : numeric
+        left side of interval
+    right : numeric
+        right side of interval
 
     """
-    def __init__(self,Left = None, Right = None):
+    def __init__(self,left = None, right = None):
 
 
         # kill complex nums
-        assert not isinstance(Left, np.complex) or not isinstance(Right, np.complex), "Inputs must be real numbers"
+        assert not isinstance(left, np.complex) or not isinstance(right, np.complex), "Inputs must be real numbers"
 
         # assume vaccous if no inputs
-        if Left is None and Right is None:
-            Right = np.inf
-            Left = np.inf
+        if left is None and right is None:
+            right = np.inf
+            left = np.inf
 
         # If only one input assume zero width
-        elif Left is None and Right is not None:
-            Left = Right
-        elif Left is not None and Right is None:
-            Right = Left
+        elif left is None and right is not None:
+            left = right
+        elif left is not None and right is None:
+            right = left
 
         # if iterable, find endpoints
-        if hasattr(Left, '__iter__') and hasattr(Right, '__iter__'):
+        if hasattr(left, '__iter__') and hasattr(right, '__iter__'):
 
-            LL = min(Left)
-            UL = min(Right)
-            LU = max(Left)
-            UU = max(Right)
+            LL = min(left)
+            UL = min(right)
+            LU = max(left)
+            UU = max(right)
 
-            Left = min(LL,LU)
-            Right = max(LU,UU)
+            left = min(LL,LU)
+            right = max(LU,UU)
 
-        elif hasattr(Left, '__iter__'):
+        elif hasattr(left, '__iter__'):
 
-            LL = min(Left)
-            LU = max(Left)
+            LL = min(left)
+            LU = max(left)
 
-            Left = min(LL,LU)
-
-
-        elif hasattr(Right, '__iter__'):
-
-            UL = min(Right)
-            UU = max(Right)
-
-            Right = max(UL,UU)
+            left = min(LL,LU)
 
 
-        if Left > Right:
-            LowerUpper = [Left, Right]
-            Left = min(LowerUpper)
-            Right = max(LowerUpper)
+        elif hasattr(right, '__iter__'):
 
-        self.Left = Left
-        self.Right = Right
+            UL = min(right)
+            UU = max(right)
+
+            right = max(UL,UU)
+
+
+        if left > right:
+            LowerUpper = [left, right]
+            left = min(LowerUpper)
+            right = max(LowerUpper)
+
+        self.left = left
+        self.right = right
 
     def __repr__(self): # return
-        return "[%g, %g]"%(self.Left,self.Right)
+        return "[%g, %g]"%(self.left,self.right)
 
     def __str__(self): # print
-        return "[%g, %g]"%(self.Left,self.Right)
+        return "[%g, %g]"%(self.left,self.right)
 
     def __iter__(self):
-        for bound in [self.Left, self.Right]:
+        for bound in [self.left, self.right]:
             yield bound
 
     def __len__(self):
@@ -99,15 +99,15 @@ class Interval():
     def __add__(self,other):
 
         if other.__class__.__name__ == 'Interval':
-            lo = self.Left + other.Left
-            hi = self.Right + other.Right
+            lo = self.left + other.left
+            hi = self.right + other.right
         elif other.__class__.__name__ == 'Pbox':
             # Perform Pbox addition assuming independance
             return other.add(self, method = 'i')
         else:
             try:
-                lo = self.Left + other
-                hi  = self.Right + other
+                lo = self.left + other
+                hi  = self.right + other
             except:
                 return NotImplemented
 
@@ -120,15 +120,15 @@ class Interval():
 
         if other.__class__.__name__ == "Interval":
 
-            lo = self.Left - other.Right
-            hi = self.Right - other.Left
+            lo = self.left - other.right
+            hi = self.right - other.left
         elif other.__class__.__name__ == "Pbox":
             # Perform Pbox subtractnion assuming independance
             return other.rsub(self)
         else:
             try:
-                lo = self.Left - other
-                hi  = self.Right - other
+                lo = self.left - other
+                hi  = self.right - other
             except:
                 return NotImplemented
 
@@ -137,16 +137,16 @@ class Interval():
     def __rsub__(self, other):
         if other.__class__.__name__ == "Interval":
             # should be overkill
-            lo = other.Right - self.Left
-            hi = other.Right - self.Right
+            lo = other.right - self.left
+            hi = other.right - self.right
 
         elif other.__class__.__name__ == "Pbox":
             # shoud have be caught by Pbox.__sub__()
             return other.__sub__(self)
         else:
             try:
-                lo = other - self.Right
-                hi = other - self.Left
+                lo = other - self.right
+                hi = other - self.left
 
             except:
                 return NotImplemented
@@ -189,10 +189,10 @@ class Interval():
         if other.__class__.__name__ == "Interval":
 
             if other.straddles_zero():
-                if other.Left == 0:
+                if other.left == 0:
                     lo = min(self.lo() / other.hi(), self.hi() / other.hi())
                     hi = np.inf
-                elif other.Right == 0:
+                elif other.right == 0:
                     lo = -np.inf
                     hi = max(self.lo() / other.lo(), self.hi() / other.lo())
                 else:
@@ -228,33 +228,33 @@ class Interval():
 
     def __pow__(self,other):
         if other.__class__.__name__ == "Interval":
-            pow1 = self.Left ** other.Left
-            pow2 = self.Left ** other.Right
-            pow3 = self.Right ** other.Left
-            pow4 = self.Right ** other.Right
+            pow1 = self.left ** other.left
+            pow2 = self.left ** other.right
+            pow3 = self.right ** other.left
+            pow4 = self.right ** other.right
             powUp = max(pow1,pow2,pow3,pow4)
             powLow = min(pow1,pow2,pow3,pow4)
         elif other.__class__.__name__ in ("int", "float"):
-            pow1 = self.Left ** other
-            pow2 = self.Right ** other
+            pow1 = self.left ** other
+            pow2 = self.right ** other
             powUp = max(pow1,pow2)
             powLow = min(pow1,pow2)
-            if (self.Right >= 0) and (self.Left <= 0) and (other % 2 == 0):
+            if (self.right >= 0) and (self.left <= 0) and (other % 2 == 0):
                 powLow = 0
         return Interval(powLow,powUp)
 
     def __rpow__(self,left):
         if left.__class__.__name__ == "Interval":
-            pow1 = left.Left ** self.Left
-            pow2 = left.Left ** self.Right
-            pow3 = left.Right ** self.Left
-            pow4 = left.Right ** self.Right
+            pow1 = left.left ** self.left
+            pow2 = left.left ** self.right
+            pow3 = left.right ** self.left
+            pow4 = left.right ** self.right
             powUp = max(pow1,pow2,pow3,pow4)
             powLow = min(pow1,pow2,pow3,pow4)
 
         elif left.__class__.__name__ in ("int", "float"):
-            pow1 = left ** self.Left
-            pow2 = left ** self.Right
+            pow1 = left ** self.left
+            pow2 = left ** self.right
             powUp = max(pow1,pow2)
             powLow = min(pow1,pow2)
 
@@ -264,17 +264,17 @@ class Interval():
     def __lt__(self,other):
         # <
         if other.__class__.__name__ == 'Interval':
-            if self.Right < other.Left:
+            if self.right < other.left:
                 return Logical(1,1)
-            elif self.Left > other.Right:
+            elif self.left > other.right:
                 return Logical(0,0)
-            elif self.straddles(other.Left,endpoints = False) or self.straddles(other.Right,endpoints = False):
+            elif self.straddles(other.left,endpoints = False) or self.straddles(other.right,endpoints = False):
                 return Logical(0,1)
             else:
                 return Logical(0,0)
         else:
             try:
-                if self.Right < other:
+                if self.right < other:
                     return Logical(1,1)
                 elif self.straddles(other,endpoints = False):
                     return Logical(0,1)
@@ -286,7 +286,7 @@ class Interval():
     def __eq__(self,other):
         # ==
         if other.__class__.__name__ == 'Interval':
-            if self.straddles(other.Left) or self.straddles(other.Right):
+            if self.straddles(other.left) or self.straddles(other.right):
                 return Logical(0,1)
             else:
                 return Logical(0,0)
@@ -308,17 +308,17 @@ class Interval():
     def __gt__(self,other):
         # >
         if other.__class__.__name__ == 'Interval':
-            if self.Right < other.Left:
+            if self.right < other.left:
                 return Logical(0,0)
-            elif self.Left > other.Right:
+            elif self.left > other.right:
                 return Logical(1,1)
-            elif self.straddles(other.Left,endpoints = False) or self.straddles(other.Right,endpoints = False):
+            elif self.straddles(other.left,endpoints = False) or self.straddles(other.right,endpoints = False):
                 return Logical(0,1)
             else:
                 return Logical(0,0)
         else:
             try:
-                if self.Left > other:
+                if self.left > other:
                     return Logical(1,1)
                 elif self.straddles(other,endpoints = False):
                     return Logical(0,1)
@@ -330,7 +330,7 @@ class Interval():
     def __ne__(self,other):
         # !=
         if other.__class__.__name__ == 'Interval':
-            if self.straddles(other.Left) or self.straddles(other.Right):
+            if self.straddles(other.left) or self.straddles(other.right):
                 return Logical(0,1)
             else:
                 return Logical(1,1)
@@ -349,17 +349,17 @@ class Interval():
     def __le__(self,other):
         # <=
         if other.__class__.__name__ == 'Interval':
-            if self.Right <= other.Left:
+            if self.right <= other.left:
                 return Logical(1,1)
-            elif self.Left >= other.Right:
+            elif self.left >= other.right:
                 return Logical(0,0)
-            elif self.straddles(other.Left,endpoints = True) or self.straddles(other.Right,endpoints = True):
+            elif self.straddles(other.left,endpoints = True) or self.straddles(other.right,endpoints = True):
                 return Logical(0,1)
             else:
                 return Logical(0,0)
         else:
             try:
-                if self.Right <= other:
+                if self.right <= other:
                     return Logical(1,1)
                 elif self.straddles(other,endpoints = True):
                     return Logical(0,1)
@@ -370,17 +370,17 @@ class Interval():
 
     def __ge__(self,other):
         if other.__class__.__name__ == 'Interval':
-            if self.Right <= other.Left:
+            if self.right <= other.left:
                 return Logical(0,0)
-            elif self.Left >= other.Right:
+            elif self.left >= other.right:
                 return Logical(1,1)
-            elif self.straddles(other.Left,endpoints = True) or self.straddles(other.Right,endpoints = True):
+            elif self.straddles(other.left,endpoints = True) or self.straddles(other.right,endpoints = True):
                 return Logical(0,1)
             else:
                 return Logical(0,0)
         else:
             try:
-                if self.Left > other:
+                if self.left > other:
                     return Logical(1,1)
                 elif self.straddles(other,endpoints = True):
                     return Logical(0,1)
@@ -390,9 +390,9 @@ class Interval():
                 raise ValueError
 
     def __bool__(self):
-        print(Logical(self.Left,self.Right))
+        print(Logical(self.left,self.right))
         try:
-            if Logical(self.Left,self.Right):
+            if Logical(self.left,self.right):
 
                 return True
             else:
@@ -404,64 +404,61 @@ class Interval():
         """
         Returns addition using perfect arithmetic
         
-        a+b = [a.Left + b.Left, a.Right + b.Right]
+        a+b = [a.left + b.left, a.right + b.right]
         """
-        return Interval(self.Left + other.Left, self.Right + other.Right)
+        return Interval(self.left + other.left, self.right + other.right)
   
     def psub(self,other):
         """
         Returns subtraction using perfect arithmetic
         
-        a+b = [a.Left - b.Left, a.Right - b.Right]
+        a+b = [a.left - b.left, a.right - b.right]
         """
-        return Interval(self.Left - other.Left, self.Right - other.Right)
+        return Interval(self.left - other.left, self.right - other.right)
     
     def oadd(self,other):
         """
         Returns addition using opposite arithmetic
         
-        a+b = [a.Left + b.Right, a.Right + b.Left]
+        a+b = [a.left + b.right, a.right + b.left]
         """
-        return Interval(self.Left + other.Right, self.Right + other.Left)
+        return Interval(self.left + other.right, self.right + other.left)
   
     def osub(self,other):
         """
         Returns subtraction using opposite arithmetic
         
-        a+b = [a.Left - b.Right, a.Right - b.Left]
+        a+b = [a.left - b.right, a.right - b.left]
         """
-        return Interval(self.Left - other.Right, self.Right - other.Left)
+        return Interval(self.left - other.right, self.right - other.left)
       
-    def left(self):
+    def lo(self):
         """
         Returns the left side of the interval
         """
-        return self.Left
+        return self.left
 
-    def right(self):
+    def hi(self):
         """
         Returns the right side of the interval
         """
-        return self.Right
-
-    lo = left
-    hi = right
+        return self.right
     
     def width(self):
         """
         Returns the width of the interval
-        self.Right - self.Left
+        self.right - self.left
         """
-        return self.Right - self.Left
+        return self.right - self.left
 
     
     def midpoint(self):
         """
         Returns midpoint of interval
-        (self.Left+self.Right)/2
+        (self.left+self.right)/2
         """
         
-        return (self.Left+self.Right)/2
+        return (self.left+self.right)/2
     
     # def mean(*args):
     #     LSum = 0
@@ -475,11 +472,11 @@ class Interval():
     #             for y in x:
     #                 if y.__class__.__name__ in ("int","float"):
     #                     y = Interval(y)
-    #                 LSum = LSum + y.Left
-    #                 USum = USum + y.Right
+    #                 LSum = LSum + y.left
+    #                 USum = USum + y.right
     #         if x.__class__.__name__ == "Interval":
-    #             LSum = LSum + x.Left
-    #             USum = USum + x.Right
+    #             LSum = LSum + x.left
+    #             USum = USum + x.right
     #         LMean = LSum / DataLen
     #         UMean = USum / DataLen
     #     return Interval(LMean, UMean)
@@ -493,17 +490,17 @@ class Interval():
     #     for x in [*args]:
     #         if x.__class__.__name__ in ("int","float"):
     #             x = Interval(x)
-    #             LBounds.append(x.Left)
-    #             UBounds.append(x.Right)
+    #             LBounds.append(x.left)
+    #             UBounds.append(x.right)
     #         if x.__class__.__name__ in ("list","tuple"):
     #             for y in x:
     #                 if y.__class__.__name__ in ("int","float"):
     #                     y = Interval(y)
-    #                 LBounds.append(y.Left)
-    #                 UBounds.append(y.Right)
+    #                 LBounds.append(y.left)
+    #                 UBounds.append(y.right)
     #         if x.__class__.__name__ == "Interval":
-    #             LBounds.append(x.Left)
-    #             UBounds.append(x.Right)
+    #             LBounds.append(x.left)
+    #             UBounds.append(x.right)
     #     while (len(LBounds) > 0):
     #         MinL = min(LBounds)
     #         LSorted.append(MinL)
@@ -531,20 +528,20 @@ class Interval():
     #     for x in [*args]:
     #         if x.__class__.__name__ in ("int","float"):
     #             x = Interval(x)
-    #             LBounds.append(x.Left)
-    #             UBounds.append(x.Right)
+    #             LBounds.append(x.left)
+    #             UBounds.append(x.right)
     #         if x.__class__.__name__ in ("list","tuple"):
     #             DataLen = DataLen + (len(x) - 1)
     #             for y in x:
     #                 if y.__class__.__name__ in ("int","float"):
     #                     y = Interval(y)
-    #                 LBounds.append(y.Left)
-    #                 UBounds.append(y.Right)
+    #                 LBounds.append(y.left)
+    #                 UBounds.append(y.right)
 
     #     for y in LBounds:
-    #         LDev.append(abs(y - dataMean.Left)**2)
+    #         LDev.append(abs(y - dataMean.left)**2)
     #     for z in UBounds:
-    #         UDev.append(abs(z - dataMean.Right)**2)
+    #         UDev.append(abs(z - dataMean.right)**2)
 
     #     LSDev = (sum(LDev))/DataLen
     #     USDev = (sum(UDev))/DataLen
@@ -570,10 +567,10 @@ class Interval():
             Otherwise
         """
         if endpoints:
-            if self.Left <= N and self.Right >= N:
+            if self.left <= N and self.right >= N:
                 return True
         else:
-            if self.Left < N and self.Right > N:
+            if self.left < N and self.right > N:
                 return True
 
         return False
@@ -605,13 +602,13 @@ class Interval():
         '''
         if isinstance(other, Interval):
             if self.straddles(other):
-                return I(max([x.Left for x in [self, other]]), min([x.Right for x in [self, other]]))
+                return I(max([x.left for x in [self, other]]), min([x.right for x in [self, other]]))
             else:
                 return None
         elif isinstance(other, list):
             if all([self.straddles(o) for o in other]):
                 assert all([isinstance(o, Interval) for o in other]), 'All intersected objects must be intervals'
-                return I(max([x.Left for x in [self] + other]), min([x.Right for x in [self] + other]))
+                return I(max([x.left for x in [self] + other]), min([x.right for x in [self] + other]))
             else:
                 return None
         else:
@@ -621,8 +618,8 @@ class Interval():
                 return None
 
     def exp(self):
-        lo = np.exp(self.Left)
-        hi = np.exp(self.Right)
+        lo = np.exp(self.left)
+        hi = np.exp(self.right)
         return Interval(lo,hi)
 # a = Interval(1,2)
 # b = Interval(3,4)
@@ -632,5 +629,5 @@ class Interval():
 ##.sort() function to sort numbers for median
 ##list1.count(x) function to help with mode
 
-
+# Alias
 I = Interval
