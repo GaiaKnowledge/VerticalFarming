@@ -587,7 +587,7 @@ def calc_pest_outbreak(scenario, years, waste_adjusted_yields):
         p_outbreak = 0.05 # Probability of pest outbreak for a given year
         p_no_outbreak = 0.95 # Probability of no pest outbreak for a given year
         pest_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
-    elif scenario.climate_control == 'Medium' or scenario.insulation_level == 'Medium' or scenario.pest_detection == 'No':
+    elif scenario.climate_control == 'Medium' or scenario.insulation_level == 'Medium' and scenario.pest_detection == 'No':
         p_outbreak = 0.2 # Probability of pest outbreak for a given year
         p_no_outbreak = 0.8 # Probability of no pest outbreak for a given year
         pest_occurence = np.random.choice(2, years, p=[p_no_outbreak, p_outbreak])
@@ -675,7 +675,7 @@ def calc_power_outage(scenario, years, waste_adjusted_yields):
 
     p_outage = 0.01  # Probability of one power outage for a given year
     p_no_outage = 0.99  # Probability of no power outage for a given year
-    i_outage = pba.mmms(months_harvest,two_months_harvest, months_harvest, 0.02)
+    i_outage = pba.mmms(months_harvest,two_months_harvest, 1.5*months_harvest, 0.02)
 
     if scenario.electrical_backup == "No" and scenario.crop1_system == "Aeroponics":
         power_outage = pba.mixture(1, i_outage, w=[p_no_outage, p_outage])

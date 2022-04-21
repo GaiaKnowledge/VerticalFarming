@@ -268,7 +268,7 @@ waste_adjusted_yields_risks, total_sales_risk, opex_other_costs, cogs_labour, ri
 
 # Electricity efficiency improvements
 """THIS EXECUTES THE OPPORTUNITIES - PICK THE SELECTED AS TRUE"""
-cogs_electricity, electricity_consumption = play_opportunities(light_efficiency=True, labour_efficiency=True,
+cogs_electricity, electricity_consumption = play_opportunities(light_efficiency=True, labour_efficiency=False,
                                                                scenario=scenario, years=years, growth_plan=growth_plan, avg_photoperiod=avg_photoperiod, light=light, life_span=life_span, electricity_consumption=electricity_consumption, HVAC_multiplier=HVAC_multiplier, light_improvement=light_improvement, cogs_electricity=cogs_electricity)
 #cogs_electricity, electricity_consumption = calc_improved_light_efficiency(scenario, years, growth_plan, avg_photoperiod, light, life_span, electricity_consumption, HVAC_multiplier, light_improvement)
 
@@ -377,7 +377,7 @@ pltem(ax3, risk_assessment_probability_df.columns, risk_assessment_probability_d
 ax3.legend()
 ax3.set_xlim(timeseries_yearly[0], timeseries_yearly[-1])
 ax3.set_ylim(0, 1)
-ax3.set_ylabel('Cumulative Probability of Bankruptcy')
+ax3.set_ylabel('Cumulative Probability of Insolvency')
 ax3.set_xlabel('Year')
 ax3.set_title('Risk Assessment for ROI and Balance')
 ax3.text(timeseries_yearly[1], 0.8, 'Critical')
@@ -392,7 +392,7 @@ pltem(ax4, risk_assessment_pes_df.columns, risk_assessment_pes_df.loc['cdf'], la
 ax4.legend()
 ax4.set_xlim(timeseries_yearly[0], timeseries_yearly[-1])
 ax4.set_ylim(0, 1)
-ax4.set_ylabel('Probability of Bankruptcy')
+ax4.set_ylabel('Probability of Insolvency')
 ax4.set_xlabel('Year')
 ax4.set_title('Risk Assessment for ROI or Balance')
 ax4.text(timeseries_yearly[1], 0.8, 'Critical')
@@ -407,7 +407,7 @@ pltem(ax5, risk_assessment_trad_df.columns, risk_assessment_trad_df.loc['cdf'], 
 ax5.legend()
 ax5.set_xlim(timeseries_yearly[0], timeseries_yearly[-1])
 ax5.set_ylim(0, 1)
-ax5.set_ylabel('Probability of Bankruptcy')
+ax5.set_ylabel('Probability of Insolvency')
 ax5.set_xlabel('Year')
 ax5.set_title('Risk Assessment for Negative Cashflow')
 ax5.text(timeseries_yearly[1], 0.8, 'Critical')
