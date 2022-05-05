@@ -349,6 +349,7 @@ yticks = 3
 #plt.rc('ytick', labelsize=MEDIUM)
 
 # ROI GRAPH
+plt.xticks(ticks=plt.xticks()[0], labels=plt.xticks()[0])
 pltem(ax1, risk_dataframe.columns, roi_risk, label = '', shade=True)
 pltem_med(ax1, risk_dataframe.columns, roi_risk, shade=True)
 ax1.plot(timeseries_yearly, bankruptcy_definition, label = 'Threshold', color='k', linestyle='dashed')
@@ -367,6 +368,8 @@ ax2.plot(timeseries_yearly, balance_threshold_p, label='Threshold', color='k', l
 ax2.set_xlabel('Year')
 ax2.set_ylabel('Financial Balance ({})'.format(scenario.currency))
 ax2.set_title('Financial Balance for Farm Lifetime')
+ax2.set_yticklabels(['{:,.0f}'.format(x) if x>9999 else '{:.0f}'.format(x) for x in ax2.get_yticks() ])
+#ax2.ticklabel_format(axis='y', style='plain', scilimits=(-2,2))
 ax2.legend()
 ax2.grid()
 
@@ -477,6 +480,7 @@ cumulative_yield = risk_dataframe.loc['Yield Crop 1'] + risk_dataframe.loc['Yiel
 pltem(ax12, risk_dataframe.columns, cumulative_yield, label = '', shade=True)
 pltem_med(ax12, risk_dataframe.columns, cumulative_yield, label = '', shade=True)
 ax12.set_xlim(timeseries_yearly[1], timeseries_yearly[-1])
+ax12.set_yticklabels(['{:,.0f}'.format(x) if x>9999 else '{:.0f}'.format(x) for x in ax12.get_yticks() ])
 ax12.set_xlabel('Year')
 ax12.set_ylabel('Total Yield ({})'.format(scenario.weight_unit))
 ax12.set_title('Annual Yield for All Crops ')
