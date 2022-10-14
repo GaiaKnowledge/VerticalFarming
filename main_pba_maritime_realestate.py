@@ -97,11 +97,12 @@ from risk_pba import labour_challenges
 from risk_pba import play_risks
 from risk_pba import play_opportunities
 
+
 cwd = os.getcwd()  # Get the current working directory (cwd)
 files = os.listdir(cwd)  # Get all the files in that directory
-filename = './Current_Financial_Model_FU_v1.xlsx'
 
 years = 15 # Time series length !!UP TO 20!!
+filename = './Current_Financial_Model_Maritime.xlsx'
 simulations = 1
 p_box = "yes"
 percent_list = []
@@ -126,45 +127,46 @@ cdf_trad_counter = build_risk_assessment_counter(years)
 threshold_counter = build_counter(thresholds=11)
 
 ## INPUTS OVERWRITTEN WITH UNCERTAINTY
-HVAC_multiplier = 1
-scenario.electricity_price = minmaxmean(0.0734, 0.1079, 0.09065)
+scenario.electricity_price = pba.Pbox(pba.I(0.3,0.34))
+nutrients_cost = [0, 39815, 39815, 39815, 39815, 39815, 39815, 39815, 39815, 39815, 39815, 39815, 39815, 39815, 39815, 39815]
 #part_time.hours_full = part_time.hours * pba.Pbox(pba.I(scenario.growing_area_mulitplier*0.6, scenario.growing_area_mulitplier*1))
 #scenario.education_multiplier = 1.05
+HVAC_multiplier = 1 #pba.Pbox(pba.I(1.1,1.2))
 #scenario.vadded_products_multiplier = pba.norm(scenario.vadded_products_multiplier, (scenario.vadded_products_multiplier*1.5 - scenario.vadded_products_multiplier*0.5)/4)
-# scenario.education_multiplier = minmaxmean(scenario.education_multiplier*0.9, scenario.education_multiplier*1.1, scenario.education_multiplier)
-#scenario.tourism_multiplier =
+#scenario.education_multiplier = minmaxmean(scenario.education_multiplier*0.9, scenario.education_multiplier*1.1, scenario.education_multiplier)
+#scenario.tourism_multiplier =Current_Financial_Model_JP_PFAL.xlsx
 #scenario.hospitality_multiplier =
 #scenario.labour_improvement = minmaxmean(scenario.labour_improvement*0.85, scenario.labour_improvement*1.15, scenario.labour_improvement)
 light_improvement = minmaxmean(0.5, 0.8, 0.65)
 #scenario.monthly_distribution_y2 = pba.Pbox(pba.I(scenario.monthly_distribution_y1,scenario.monthly_distribution_y2))
 #scenario.crop_parameters[0].price1 = pba.Pbox(pba.I(0,30))#THIS INTERVAL SHOULD AFFECT RISK GRAPH DRASICTLLY
 #scenario.other_costs_full = pba.Pbox(pba.I(scenario.other_costs_full*0.8,scenario.other_costs_full*1.2))
-#part_time.hours_full = pba.Pbox(pba.I(250, 300))
-water_use = pba.mmms(1325, 8325, 3730, 2039)
 
 """INPUTS CHANGED FOR AFTER INTERVENTIONS"""
-# scenario.capex_full += 30000
-# HVAC_multiplier = 1.2
-# light_improvement = minmaxmean(0.5, 0.7, 0.6)
+# #scenario.growing_area_multiplier = 2.5
+# scenario.capex_full += pba.Pbox(pba.I(30000,40000))
+# # # #manager.count_pilot = 2
+# # # #manager.count_full = 2
+# # #
 # sales_person.count_pilot = 1
+# marketer.count_full = 1
 # admin.count_full = 1
 # scenario.climate_control = 'Medium'
 # scenario.nutrient_control = 'High'
 # scenario.co2_enrichment = 'Yes'
 # scenario.packaging_cost_full = 0.60
-# scenario.packaging_cost_pilot = 1
+# # scenario.packaging_cost_pilot = 1
 # scenario.monthly_distribution_y2 = scenario.monthly_distribution_y1
 # scenario.tourism_avg_revenue_y1 = 2000
-# scenario.tourism_multiplier = 1.1
-# #scenario.education_avg_revenue_y1 = 2000
-# scenario.grants_rev_y2 += 100000 #pba.Pbox(pba.I(75000,100000))
-# scenario.electricity_price = minmaxmean(0.0734, 0.085, 0.079)
+# scenario.education_avg_revenue_y1 = 2000
+# scenario.grants_rev_y2 += 200000 #pba.Pbox(pba.I(75000,100000))
+# scenario.electricity_price = 0.0734
 # scenario.other_costs_full = 0.05
-# scenario.biosecurity_level = 'High'
+# #scenario.crop_parameters[0].customer_percent = 1
+
 
 # byield_crop1, byield_crop2, byield_crop3, byield_crop4 = calc_best_yield(scenario, growth_plan, lettuce_fu_mix, basil_lemon, basil_genovese, none, years)
 crop_yields = calc_best_yield(scenario, growth_plan, years, p_box)
-print(crop_yields)
 light_factor, temp_factor, nutrient_factor, co2_factor = calc_adjustment_factors(scenario, p_box)
 adjusted_yields = calc_adjusted_yield(crop_yields, light_factor, temp_factor, nutrient_factor, co2_factor)
 waste_adjusted_yields = calc_waste_adjusted_yield(scenario, adjusted_yields, years, p_box)
@@ -174,15 +176,17 @@ education_rev = calc_education_rev(scenario, years)
 tourism_rev = calc_tourism_rev(scenario, years)
 hospitality_rev = calc_hospitality_rev(scenario, years)
 grants_rev = calc_grants_rev(years, scenario)
+#grants_rev[2] = 105000 # How can we factor this into inputs for example?
 
 cogs_labour, direct_labour = calc_direct_labour(farmhand, delivery, part_time, years, scenario)
 cogs_media = calc_growing_media(scenario, total_sales, adjusted_yields)
 cogs_packaging = calc_packaging(scenario, years, waste_adjusted_yields)
 cogs_seeds_nutrients, nutrient_consumption, total_no_of_plants = calc_nutrients_and_num_plants(scenario, cogs_media, adjusted_yields, years)
+cogs_seeds_nutrients = [x + y for x, y in zip(cogs_seeds_nutrients, nutrients_cost)]
 avg_photoperiod = calc_avg_photoperiod(scenario)
 cogs_electricity, electricity_consumption = calc_electricity(scenario, growth_plan, avg_photoperiod, light, years, HVAC_multiplier)
-cogs_water, water_consumption = calc_water(scenario, years, waste_adjusted_yields, water_use)
-print(water_consumption)
+cogs_water, water_consumption = calc_water(scenario, years, waste_adjusted_yields, water_use=0)
+
 opex_rent = calc_rent(scenario, years)
 opex_salaries = calc_salaries(ceo, scientist, marketer, admin, manager, headgrower, sales_person, years)
 opex_other_costs = calc_other_costs(scenario, opex_salaries, repairs, years)
@@ -345,8 +349,9 @@ yticks = 3
 #plt.rc('ytick', labelsize=MEDIUM)
 
 # ROI GRAPH
-pltem_med(ax1, risk_dataframe.columns, roi_risk, shade=True)
+plt.xticks(ticks=plt.xticks()[0], labels=plt.xticks()[0])
 pltem(ax1, risk_dataframe.columns, roi_risk, label = '', shade=True)
+pltem_med(ax1, risk_dataframe.columns, roi_risk, shade=True)
 ax1.plot(timeseries_yearly, bankruptcy_definition, label = 'Threshold', color='k', linestyle='dashed')
 ax1.set_xlim(timeseries_yearly[1], timeseries_yearly[-1])
 ax1.set_xlabel('Year', fontsize=MEDIUM)
@@ -363,8 +368,8 @@ ax2.plot(timeseries_yearly, balance_threshold_p, label='Threshold', color='k', l
 ax2.set_xlabel('Year')
 ax2.set_ylabel('Financial Balance ({})'.format(scenario.currency))
 ax2.set_title('Financial Balance for Farm Lifetime')
+ax2.set_yticklabels(['{:,.0f}'.format(x) if x>9999 or x<9999 else '{:.0f}'.format(x) for x in ax2.get_yticks() ])
 #ax2.ticklabel_format(axis='y', style='plain', scilimits=(-2,2))
-#ax2.set_yticklabels(['{:,.0f}'.format(x) if x>9999 or x<9999 else '{:.0f}'.format(x) for x in ax2.get_yticks() ])
 ax2.legend()
 ax2.grid()
 
@@ -421,7 +426,7 @@ ax5.text(timeseries_yearly[years-3], 0.05, 'Safe')
 # ax6.grid()
 
 # Gross Margin GRAPH
-pltem(ax7, risk_dataframe.columns, risk_dataframe.loc['Gross Profit'], label = 'Gross Profit', shade=True)
+pltem(ax7, risk_dataframe.columns, risk_dataframe.loc['Gross Profit'], label = '', shade=True)
 pltem_med(ax7, risk_dataframe.columns, risk_dataframe.loc['Gross Profit'], shade=True)
 ax7.set_xlim(timeseries_yearly[1], timeseries_yearly[-1])
 ax7.set_xlabel('Year')
@@ -441,7 +446,7 @@ ax8.legend()
 ax8.grid()
 
 # Cost of Goods Sold GRAPH
-pltem(ax9, risk_dataframe.columns, risk_dataframe.loc['Total COGS'], label = '', shade=True)
+pltem(ax9, risk_dataframe.columns, risk_dataframe.loc['Total COGS'], label = 'COGS', shade=True)
 pltem_med(ax9, risk_dataframe.columns, risk_dataframe.loc['Total COGS'], shade=True)
 ax9.set_xlim(timeseries_yearly[1], timeseries_yearly[-1])
 ax9.set_xlabel('Year')
@@ -475,10 +480,10 @@ cumulative_yield = risk_dataframe.loc['Yield Crop 1'] + risk_dataframe.loc['Yiel
 pltem(ax12, risk_dataframe.columns, cumulative_yield, label = '', shade=True)
 pltem_med(ax12, risk_dataframe.columns, cumulative_yield, label = '', shade=True)
 ax12.set_xlim(timeseries_yearly[1], timeseries_yearly[-1])
+ax12.set_yticklabels(['{:,.0f}'.format(x) if x>9999 else '{:.0f}'.format(x) for x in ax12.get_yticks() ])
 ax12.set_xlabel('Year')
-#ax12.set_yticklabels(['{:,.0f}'.format(x) if x>9999 else '{:.0f}'.format(x) for x in ax12.get_yticks() ])
 ax12.set_ylabel('Total Yield ({})'.format(scenario.weight_unit))
-ax12.set_title('Annual Yield for All Crops')
+ax12.set_title('Annual Yield for All Crops ')
 ax12.legend()
 ax12.grid()
 plt.show()
@@ -518,7 +523,7 @@ risk_summary['Cumulative Sum'] = risk_dataframe.sum(axis=1)
 
 cum_profit = risk_dataframe.loc['Net Profit']['Cumulative Sum']
 
-export_results(risk_dataframe, risk_summary, risk_dataframe, p_box, 'results_UK.xlsx')
+export_results(risk_dataframe, risk_summary, risk_dataframe, p_box, 'results_maritime.xlsx')
 
 """FINAL STATEMENTS"""
 print (scenario.start_date.strftime('The simulation computes from %d, %b, %Y'), end_date.strftime('until %d, %b, %Y'))      # format_str = "%B %d, %Y"')
@@ -526,7 +531,7 @@ print (scenario.start_date.strftime('The simulation computes from %d, %b, %Y'), 
 print('Estimated capital expenditure for full-scale farm is: {}{}'.format(scenario.currency,capex_full))
 print(risk_dataframe)
 print(payback_period)
-print('Estimated 15 year cumulative profit is between: {}{} and {}. Avg: {}'.format(scenario.currency,truncate(min(cum_profit)), truncate(max(cum_profit)), median(cum_profit)))
+print('Estimated 15 year cumulative profit is between: {}{} and {}'.format(scenario.currency,truncate(min(cum_profit)), truncate(max(cum_profit))))
 
 
 ''''END'''
