@@ -339,7 +339,7 @@ def calc_pathogen_outbreak(scenario, years, waste_adjusted_yields, p_box):
         #pathogen_outbreak = pba.mixture(1, pba.Pbox(pba.I(0.85,0.95)), w=[0.95,0.05])
 
         if scenario.biosecurity_level == 'High':
-            pathogen_outbreak = pba.mixture(1, pba.Pbox(pba.I(0.85, 0.95)), w=[0.95, 0.05])
+            pathogen_outbreak = pba.mixture(1, pba.Pbox(pba.I(0.85, 0.95)), weights=[0.95, 0.05])
             p_outbreak = 0.05 # Probability of outbreak for a given year
             p_no_outbreak = 0.95 # Probability of no outbreak for a given year
             p_impact = pba.mmms(0.85,0.95,0.93,0.025)
@@ -359,7 +359,7 @@ def calc_pathogen_outbreak(scenario, years, waste_adjusted_yields, p_box):
             p_impact = pba.beta(8,2)
             p_impact = pba.mmms(0.85,0.95,0.93,0.025)
 
-    pathogen_outbreak = pba.mixture(1, p_impact, w=[p_outbreak, p_no_outbreak])
+    pathogen_outbreak = pba.mixture(1, p_impact, weights=[p_outbreak, p_no_outbreak])
 
     # w_risks = []
     # for w in waste_adjusted_yields:
@@ -415,7 +415,7 @@ def calc_repairs(scenario, years):
     small_repair = (scenario.capex_lights + scenario.capex_facilities) * pba.mmms(0,0.03,0.015,0.005)
     big_repair = (scenario.capex_lights + scenario.capex_facilities) * pba.mmms(0.01,0.1,0.04,0.02)
 
-    repair_cost = pba.mixture(1, small_repair, big_repair, w=[p_no_repair, p_small_repair, p_big_repair])
+    repair_cost = pba.mixture(1, small_repair, big_repair, weights=[p_no_repair, p_small_repair, p_big_repair])
 
     #repair_occurence = [0, 0, *repair_occurence]
 
@@ -473,7 +473,7 @@ def calc_customer_withdrawal(scenario, years, total_sales):
 
     customer_withdrawal = []
 
-    customer_withdrawal_pba = pba.mixture(customer_withdrawal_impact, 1, w=[p_withdrawal, p_no_withdrawal])
+    customer_withdrawal_pba = pba.mixture(customer_withdrawal_impact, 1, weights=[p_withdrawal, p_no_withdrawal])
 
     for y in range(0, years+1):
         customer_withdrawal.append(total_sales[y]*customer_withdrawal_pba)
@@ -525,8 +525,8 @@ def labour_challenges(scenario, years, total_sales, cogs_labour):
     i_extra_cost = pba.mmms(1, 1.8, 1.25, 0.2)
     i_sabotage = pba.mmms(0.96, 1, 0.93, 0.01)
 
-    sabotage_risk = pba.mixture(i_sabotage, 1, w=[p_sabotage, p_no_sabotage])
-    extra_cost_risk = pba.mixture(i_extra_cost, 1, w=[p_extra_cost, p_no_extra_cost])
+    sabotage_risk = pba.mixture(i_sabotage, 1, weights=[p_sabotage, p_no_sabotage])
+    extra_cost_risk = pba.mixture(i_extra_cost, 1, weights=[p_extra_cost, p_no_extra_cost])
 
     labour_damage = []
     labour_extra_cost = []
@@ -606,7 +606,7 @@ def calc_pest_outbreak(scenario, years, waste_adjusted_yields):
     elif scenario.ipm == 'Yes':
         i_pest = pba.mmms(0.9,0.999, 0.97, 0.015)
 
-    pest_risk = pba.mixture(1, i_pest, w=[p_no_outbreak, p_outbreak])
+    pest_risk = pba.mixture(1, i_pest, weights=[p_no_outbreak, p_outbreak])
 
     pest_outbreak =[]
 
@@ -678,7 +678,7 @@ def calc_power_outage(scenario, years, waste_adjusted_yields):
     i_outage = pba.mmms(months_harvest,two_months_harvest, 1.5*months_harvest, 0.02)
 
     if scenario.electrical_backup == "No" and scenario.crop1_system == "Aeroponics":
-        power_outage = pba.mixture(1, i_outage, w=[p_no_outage, p_outage])
+        power_outage = pba.mixture(1, i_outage, weights=[p_no_outage, p_outage])
     else:
         power_outage = pba.Pbox(pba.I(1,1))
 
@@ -748,7 +748,7 @@ def calc_planning_delay(risk_dataframe, timeseries_yearly, years, scenario):
     i_delay = 1/scenario.growing_area_mulitplier
     i_no_delay = 1
 
-    delay_risk = pba.mixture(i_no_delay, i_delay, w=[p_no_delay, p_delay])
+    delay_risk = pba.mixture(i_no_delay, i_delay, weights=[p_no_delay, p_delay])
 
     risk_dataframe.loc["Yield Crop 1":"Revenue - Hospitality", "2023-02-01 00:00:00"] *= delay_risk
     risk_dataframe.loc["Total Revenue":"Total COGS", "2023-02-01 00:00:00"] *= delay_risk

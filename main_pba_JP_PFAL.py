@@ -418,12 +418,12 @@ ax5.text(timeseries_yearly[years-10], 0.6, 'Substantial')
 ax5.text(timeseries_yearly[years-5], 0.3, 'Moderate')
 ax5.text(timeseries_yearly[years-3], 0.05, 'Safe')
 
-# pltem(ax6, threshold_df.columns, threshold_df.loc['cdf'], label='CDF', shade=True)
-# ax6.set_xlabel('Threshold Financial Balance ({})'.format(scenario.currency))
-# ax6.set_ylabel('Probability of Bankruptcy after {} years'.format(years))
-# ax6.plot()
-# ax6.legend()
-# ax6.grid()
+pltem(ax6, threshold_df.columns, threshold_df.loc['cdf'], label='CDF', shade=True)
+ax6.set_xlabel('Threshold Financial Balance ({})'.format(scenario.currency))
+ax6.set_ylabel('Probability of Bankruptcy after {} years'.format(years))
+ax6.plot()
+ax6.legend()
+ax6.grid()
 
 # Gross Margin GRAPH
 pltem(ax7, risk_dataframe.columns, risk_dataframe.loc['Gross Profit'], label = '', shade=True)

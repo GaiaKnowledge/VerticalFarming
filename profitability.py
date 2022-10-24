@@ -24,21 +24,21 @@ ax.barh(y_pos, performance, align='center', color='c', label='Profitable')
 ax.set_yticks(y_pos)
 ax.set_yticklabels(reports)
 ax.invert_yaxis()  # labels read top-to-bottom
-ax.set_ylabel('Analysis')
-ax.set_xlabel('Percentage (%)')
-ax.set_title('Profitability of Vertical Plant Farms')
+ax.set_ylabel('Analysis', fontsize=16)
+ax.set_xlabel('Percentage (%)', fontsize=16)
+ax.set_title('Profitability of Vertical Plant Farms', fontsize=20, x=0)
 ax.legend(loc='right', frameon=True)
 #plt.tight_layout()
 plt.grid(axis='x', linewidth=0.25)
 
-plt.annotate('N = 165', (2,0.15)) # Japan 2014
-plt.annotate('N = 56', (2,1.1)) # SIFR 2017
-plt.annotate('N = 215', (2,2.1)) # Japan 2018
-plt.annotate('N = 223', (2,3.1)) # CEA Census 2019
-plt.annotate('N = 10', (2,4.05)) # Container VF 2017
-plt.annotate('N = 33', (2,5.1)) # Container VF CEA 2019
-plt.annotate('N = 70', (2,6.05)) # GH SIFR 2017
-plt.annotate('N = 167', (2,7.1)) # GH CEA Census  2019
+plt.annotate('n = 165', (2,0.15)) # Japan 2014
+plt.annotate('n = 56', (2,1.1)) # SIFR 2017
+plt.annotate('n = 215', (2,2.1)) # Japan 2018
+plt.annotate('n = 223', (2,3.1)) # CEA Census 2019
+plt.annotate('n = 10', (2,4.05)) # Container VF 2017
+plt.annotate('n = 33', (2,5.1)) # Container VF CEA 2019
+plt.annotate('n = 70', (2,6.05)) # GH SIFR 2017
+plt.annotate('n = 167', (2,7.1)) # GH CEA Census  2019
 
 
 plt.show()
